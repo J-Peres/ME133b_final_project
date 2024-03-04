@@ -7,6 +7,7 @@
 #   Places to edit are marked as FIXME.
 #
 import numpy as np
+from copy import deepcopy
 
 from visualization import Visualization, Robot
 
@@ -111,7 +112,7 @@ def updateBelief(prior, probSensor, sensor):
 #    probProximal  List of probability that sensor triggers at dist=(index+1)
 #    prob          Grid of probability that (sensor==True)
 #
-def precomputeSensorProbability(drow, dcol, probProximal = [1.0]):
+def precomputeSensorProbability(drow, dcol, probProximal = [1.0], kidnap=False):
     # Prepare an empty probability grid.
     prob = np.zeros((rows, cols))
 
@@ -130,17 +131,18 @@ def precomputeSensorProbability(drow, dcol, probProximal = [1.0]):
     
     # Ensures that no cell has zero belief by subtracting 5 percent of belief from top 10 cells with 
     # highest sensor probability
-    percent = .05
-    k = 10
-    top_flat = np.argpartition(prob.flatten(), -k)[-k:]
-    top_indices = np.array(np.unravel_index(top_flat[np.argsort(-prob.flatten()[top_flat])], prob.shape)).T
-    total_nonzero_prob = 0
-    for (r, c) in top_indices:
-        total_nonzero_prob += prob[r, c] * percent
-    nonzero_prob = total_nonzero_prob / np.count_nonzero(prob == 0)
-    for r in range(rows):
-        for c in range(cols):
-            if prob[r, c] == 0: prob[r, c] += nonzero_prob
+    if kidnap:
+        percent = .05
+        k = 10
+        top_flat = np.argpartition(prob.flatten(), -k)[-k:]
+        top_indices = np.array(np.unravel_index(top_flat[np.argsort(-prob.flatten()[top_flat])], prob.shape)).T
+        total_nonzero_prob = 0
+        for (r, c) in top_indices:
+            total_nonzero_prob += prob[r, c] * percent
+        nonzero_prob = total_nonzero_prob / np.count_nonzero(prob == 0)
+        for r in range(rows):
+            for c in range(cols):
+                if prob[r, c] == 0: prob[r, c] += nonzero_prob
 
     # Return the computed grid.
     return prob
@@ -164,9 +166,9 @@ def main():
 
     # Initialize your localization parameters.
     probCmd      = 1
-    probProximal = [0.9]
+    probProximal = [1]
     
-    robot = Robot(walls, row=start[0], col=start[1], probProximal=[0.9, 0.6, 0.3], probCmd=probCmd)
+    robot = Robot(walls, row=start[0], col=start[1], probProximal=probProximal, probCmd=probCmd)
 
     # Report.
     print("Localization is assuming probProximal = " + str(probProximal) +
@@ -176,11 +178,13 @@ def main():
     # Initialize the figure.
     visual = Visualization(walls, robot, goal)
 
+    kidnap = False
+    
     # Pre-compute the probability grids for each sensor reading.
-    probUp    = precomputeSensorProbability(-1,  0, probProximal)
-    probRight = precomputeSensorProbability( 0,  1, probProximal)
-    probDown  = precomputeSensorProbability( 1,  0, probProximal)
-    probLeft  = precomputeSensorProbability( 0, -1, probProximal)
+    probUp    = precomputeSensorProbability(-1,  0, probProximal, kidnap=kidnap)
+    probRight = precomputeSensorProbability( 0,  1, probProximal, kidnap=kidnap)
+    probDown  = precomputeSensorProbability( 1,  0, probProximal, kidnap=kidnap)
+    probLeft  = precomputeSensorProbability( 0, -1, probProximal, kidnap=kidnap)
 
     # Show the sensor probability maps.
     # visual.Show(probUp)
