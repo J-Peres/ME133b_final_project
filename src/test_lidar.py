@@ -2,10 +2,12 @@ import sensor, env
 import pygame as pg
 
 WIDTH, HEIGHT = 800, 800
+RMIN = 10
+RMAX = 100
 
 def main():
     env_ = env.Environment((WIDTH, HEIGHT))
-    laser = sensor.LaserSensor(pg.surfarray.array3d(env_.map_img), (0, 0), (WIDTH, HEIGHT))
+    laser = sensor.LaserSensor(pg.surfarray.array3d(env_.map_img), (0, 0), (WIDTH, HEIGHT), RMIN, RMAX)
     
     running = True
     
@@ -26,7 +28,7 @@ def main():
             sensor_data = laser.scan()
             env_.process_data(sensor_data) if sensor_data else None
         
-        env_.show()
+        env_.show(None, None, None)
         
         pg.display.update()
     

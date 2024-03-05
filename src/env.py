@@ -28,6 +28,7 @@ class Environment:
         self.start = None
         self.goal = None
         self.point_cloud = []
+        self.path = []
         self.map_file = f"maps\map_{seed}_{map_size}.png"
         
         # Generate the maze and map image
@@ -121,12 +122,14 @@ class Environment:
             
             if point not in self.point_cloud:
                 self.point_cloud.append(point)
+            
+            if robot_pos not in self.path:
+                self.path.append(robot_pos)
     
     def show(self, 
              robot_pos: tuple[int, int], 
              goal: tuple[int, int], 
-             probs: np.ndarray, 
-             path: list[tuple[int, int]]):
+             probs: np.ndarray):
         """Shows the map image with the point cloud."""
         
         # Draw the map
@@ -135,23 +138,29 @@ class Environment:
         # Draw the point cloud
         for point in self.point_cloud:
             pg.draw.circle(self.map, (255, 0, 0), point, 1)
+        
+        # Draw the path
+        for i in range(len(self.path) - 1):
+            pg.draw.line(self.map, (0, 0, 255), self.path[i], self.path[i + 1], 3)
             
         # Draw the robot
-        pg.draw.circle(self.map, (0, 0, 255), robot_pos, 5)
+        if robot_pos is not None:
+            pg.draw.circle(self.map, (0, 0, 255), robot_pos, 5)
         
         # Draw the goal
-        pg.draw.circle(self.map, (0, 255, 0), goal, 25)
+        if goal is not None:
+            pg.draw.circle(self.map, (0, 255, 0), goal, 25)
 
-        # # Draw the probs
-        # if probs is not None:
-        #     for i in range(probs.shape[0]):
-        #         for j in range(probs.shape[1]):
-        #             color = tuple(self.map_img_arr[i, j])
-        #             if color == (0, 0, 0):
-        #                 continue
+        # Draw the probs
+        if probs is not None:
+            for i in range(probs.shape[0]):
+                for j in range(probs.shape[1]):
+                    color = tuple(self.map_img_arr[i, j])
+                    if color == (0, 0, 0):
+                        continue
                     
-        #             if probs[i, j] > 0:
-        #                 pg.draw.circle(self.map, (0, 0, 128 * probs[i, j]), (i, j), 1)
-            
+                    if probs[i, j] > 0:
+                        pg.draw.circle(self.map, (0, 0, 128 * probs[i, j]), (i, j), 1)
+        
         # Update the display
         pg.display.flip()
