@@ -2,6 +2,7 @@ import math
 import pygame as pg
 import numpy as np
 from mazelib import Maze
+import time
 from mazelib.generate.Prims import Prims
 from mazelib.solve.BacktrackingSolver import BacktrackingSolver as BackTracker
 import matplotlib.pyplot as plt
@@ -143,6 +144,7 @@ class Environment:
             data (list[list[float, float, tuple[int, int], bool]]): list of laser scan data
                 data[i] = [distance, angle, robot_pos, is_obstacle]
         """
+        start_time = time.time()
         self.point_cloud = []
         for distance, angle, robot_pos, is_obstacle in data:
             # Calculate the position of the point
@@ -156,27 +158,39 @@ class Environment:
                 self.path.append(robot_pos)
                 if len(self.path) > 1:
                     pg.draw.line(self.map, COLORS['blue'], self.path[-2], self.path[-1], 3)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print("PROCESS DATA:", execution_time, "seconds")
     
     def grid_to_pixel(self, pos: tuple[int, int]) -> tuple[int, int]:
         """Converts grid coordinates to pixel coordinates."""
         
         return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
             
-    def show(self, probs: np.ndarray):
+    def show(self, probs: np.ndarray, changes: np.ndarray):
         """Shows the map image with the point cloud."""
         
         # self.map.blit(self.map_img, (0, 0))
         # Draw the probs
+        start_time = time.time()
         if probs is not None:
-            for i in range(probs.shape[0]):
-                for j in range(probs.shape[1]):
-                    if probs[i, j] > 0:
-                        color = np.array([255, 255, 255]) * (1 - probs[i, j])
-                        self.map.set_at((j, i), color)
+            for (i, j) in changes:
+            # for i in range(probs.shape[0]):
+            #     for j in range(probs.shape[1]):
+                if probs[i, j] > 0:
+                    color = np.array([255, 255, 255]) * (1 - probs[i, j])
+                    self.map.set_at((j, i), color)
+
+        print(len(changes))
 
         # Draw point cloud
         for point in self.point_cloud:
             self.map.set_at(point, COLORS['red'])
 
+
         # Update the display
         pg.display.flip()
+
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print("Execution time SHOW:", execution_time, "seconds")

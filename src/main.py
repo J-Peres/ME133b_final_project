@@ -40,9 +40,9 @@ def main():
             env_.process_data(sensor_data) if sensor_data else None
             
             map_.laserCB(sensor_data, RMIN, RMAX)
-            probs = map_.get_probs()
+            probs, changes = map_.get_probs()
         
-        env_.show(probs)
+        env_.show(probs, changes)
         count += 1
         
         pg.display.update()

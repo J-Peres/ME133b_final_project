@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 WIDTH, HEIGHT = 800, 800
 MAZE_SIZE = 20
@@ -12,6 +13,8 @@ class Map:
         # Create the log-odds-ratio grid.
         self.logoddsratio = np.zeros((HEIGHT, WIDTH))
 
+        self.old_prob = None
+
     def get_probs(self):
         """Get probabilities from the logoddsratio."""
         
@@ -19,8 +22,21 @@ class Map:
         probs = 1 - 1/(1+np.exp(self.logoddsratio))
 
         probs[probs > 1] = 1
+
+        if self.old_prob is None:
+            self.old_prob = probs
+            changes = [(i, j) for i in range(HEIGHT) for j in range(WIDTH)]
+        else:
+            start_time = time.time()
+            changes = np.argwhere(np.abs(probs - self.old_prob) > 0.01)
+            end_time = time.time()
+            execution_time = end_time - start_time
+
+            print("Execution time:", execution_time, "seconds")
+
+            self.old_prob = probs
         
-        return probs
+        return probs, changes
     
     def set(self, u: int, v: int, value: float):
         """Set the log odds ratio value."""
@@ -72,6 +88,8 @@ class Map:
         # Convert the laser position to pixel coordinates
         xs = xc
         ys = yc
+
+        start_time = time.time()
         
         for r, theta, _, is_obstacle in data:
             if rmin < r:
@@ -93,3 +111,7 @@ class Map:
                 
                 # Set the endpoint as occupied
                 self.set(int(xe), int(ye), l_occ)
+
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print("Execution time laserCB:", execution_time, "seconds")
