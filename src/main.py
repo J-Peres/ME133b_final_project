@@ -15,8 +15,8 @@ def main():
     map_  = buildmap.Map()
     
     start, goal = env_.start, env_.goal
-    robot_pos = env_.grid_to_pixel(start)
-    goal = env_.grid_to_pixel(goal)
+    robot_pos = start
+    goal = goal
     running = True
     
     probs = np.zeros((HEIGHT, WIDTH))
@@ -35,14 +35,14 @@ def main():
         #         sensor_on = False
         
         if sensor_on:
-            laser_.pos = pacman.get_next_pos() #pg.mouse.get_pos()
+            laser_.pos = pacman.update_pos(env_) #pg.mouse.get_pos()
             sensor_data = laser_.scan()
             env_.process_data(sensor_data) if sensor_data else None
             
             # map_.laserCB(sensor_data, RMIN, RMAX)
             # probs = map_.get_probs()
         
-        env_.show(probs)
+        env_.show(None)
         count += 1
         
         pg.display.update()

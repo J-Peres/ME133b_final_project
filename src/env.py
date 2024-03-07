@@ -98,8 +98,8 @@ class Environment:
         elif start[1] == cols - 1:
             start = (start[0], start[1] - 1)
         
-        self.start = start
-        self.goal = goal
+        self.start = self.grid_to_pixel(start)
+        self.goal = self.grid_to_pixel(goal)
 
         #IF NEEDED, GENERALLY SHOULDNT BE USED
         # Solve the maze
@@ -108,10 +108,6 @@ class Environment:
 
         # Get the path
         self.true_path = m.solutions[0]
-        
-    def generate_map_img(self):
-        self.start = self.grid_to_pixel(start)
-        self.goal = self.grid_to_pixel(goal)
     
     def generate_map_img(self, display=False):
         """Generates a map image and saves it to a file."""
@@ -158,21 +154,14 @@ class Environment:
             
             if robot_pos not in self.path:
                 self.path.append(robot_pos)
+                if len(self.path) > 1:
+                    pg.draw.line(self.map, COLORS['blue'], self.path[-2], self.path[-1], 3)
     
     def grid_to_pixel(self, pos: tuple[int, int]) -> tuple[int, int]:
         """Converts grid coordinates to pixel coordinates."""
         
         return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
-
-    def show(self, 
-             robot_pos: tuple[int, int], 
-             goal: tuple[int, int], 
-             probs: np.ndarray,
-             mini_update: bool):
-                if len(self.path) > 1:
-                    pg.draw.line(self.map, COLORS['blue'], self.path[-2], self.path[-1], 3)
-                
-    
+            
     def show(self, probs: np.ndarray):
         """Shows the map image with the point cloud."""
 
