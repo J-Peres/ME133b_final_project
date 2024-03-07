@@ -90,14 +90,14 @@ class LaserSensor:
                         if color == (0, 0, 0):
 
                             prev_u = (i - 1)/self.scan_resolution
-                            prev_x = round(target[0] * u + self.pos[0] * (1-u))
-                            prev_y = round(target[1] * u + self.pos[1] * (1-u))
+                            prev_x = round(target[0] * prev_u + self.pos[0] * (1-prev_u))
+                            prev_y = round(target[1] * prev_u + self.pos[1] * (1-prev_u))
 
                             central_point = np.array([prev_x, prev_y])
                             perc = .1
-                            while tuple(self.map[central_point[0], central_point[1]]) != (0, 0, 0):
-                                central_point = central_point + perc * (np.array([x, y]) - central_point)
-                                prec += .1
+                            while tuple(self.map[int(central_point[0]), int(central_point[1])]) != (0, 0, 0):
+                                central_point = np.round(central_point + perc * (np.array([x, y]) - central_point))
+                                perc += .1
 
                             distance = self.euclidean((central_point[0], central_point[1]))
                             output = self.add_uncertainty(distance, theta, self.sigma)
