@@ -1,5 +1,6 @@
 import sensor, env, buildmap
 from buildmap import WIDTH, HEIGHT, MAZE_SIZE, RESOLUTION
+from pacman import Pacman
 
 import pygame as pg
 import numpy as np
@@ -24,20 +25,23 @@ def main():
     running = True
     
     probs = np.zeros((HEIGHT, WIDTH))
+
+    pacman = Pacman(robot_pos)
     
+    count = 0
     while running:
-        sensor_on = False
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                print("Quitting...")
-                running = False
-            if pg.mouse.get_focused():
-                sensor_on = True
-            elif not pg.mouse.get_focused():
-                sensor_on = False
+        sensor_on = True #False
+        # for event in pg.event.get():
+        #     if event.type == pg.QUIT:
+        #         print("Quitting...")
+        #         running = False
+        #     if pg.mouse.get_focused():
+        #         sensor_on = True
+        #     elif not pg.mouse.get_focused():
+        #         sensor_on = False
         
         if sensor_on:
-            mouse_pos = pg.mouse.get_pos()
+            mouse_pos = pacman.get_next_pos() #pg.mouse.get_pos()
             laser_.pos = mouse_pos
             sensor_data = laser_.scan()
             env_.process_data(sensor_data) if sensor_data else None
@@ -45,7 +49,8 @@ def main():
             # map_.laserCB(sensor_data, RMIN, RMAX)
             # probs = map_.get_probs()
         
-        env_.show(robot_pos, goal, probs, None)
+        env_.show(pacman.pos, goal, probs, mini_update=(count % 500 == 0))
+        count += 1
         
         pg.display.update()
     

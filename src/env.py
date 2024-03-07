@@ -5,6 +5,7 @@ from mazelib import Maze
 from mazelib.generate.Prims import Prims
 import matplotlib.pyplot as plt
 from matplotlib import colors
+import threading
 
 
 class Environment:
@@ -129,7 +130,8 @@ class Environment:
     def show(self, 
              robot_pos: tuple[int, int], 
              goal: tuple[int, int], 
-             probs: np.ndarray):
+             probs: np.ndarray,
+             mini_update: bool):
         """Shows the map image with the point cloud."""
         
         # Draw the map
@@ -152,15 +154,18 @@ class Environment:
             pg.draw.circle(self.map, (0, 255, 0), goal, 25)
 
         # Draw the probs
-        if probs is not None:
-            for i in range(probs.shape[0]):
-                for j in range(probs.shape[1]):
-                    color = tuple(self.map_img_arr[i, j])
-                    if color == (0, 0, 0):
-                        continue
-                    
-                    if probs[i, j] > 0:
-                        pg.draw.circle(self.map, (0, 0, 128 * probs[i, j]), (i, j), 1)
+        if mini_update:
+            if probs is not None:
+                for i in range(probs.shape[0]):
+                    for j in range(probs.shape[1]):
+                        color = tuple(self.map_img_arr[i, j])
+                        if color == (0, 0, 0):
+                            continue
+
+                        if probs[i, j] > 0:
+                            self.map.set_at((j, i), (0, 0, int(128 * probs[i, j])))
         
+
+
         # Update the display
         pg.display.flip()
