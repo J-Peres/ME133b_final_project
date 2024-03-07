@@ -3,7 +3,7 @@ import numpy as np
 WIDTH, HEIGHT = 800, 800
 MAZE_SIZE = 20
 
-RESOLUTION =  1
+RESOLUTION =  (MAZE_SIZE + 1) / WIDTH
 LFREE     = -0.1     # Set the log odds ratio of detecting freespace
 LOCCUPIED =  0.1     # Set the log odds ratio of detecting occupancy
 

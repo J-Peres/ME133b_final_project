@@ -3,9 +3,10 @@ import pygame as pg
 import numpy as np
 from mazelib import Maze
 from mazelib.generate.Prims import Prims
+from mazelib.solve.BacktrackingSolver import BacktrackingSolver as BackTracker
 import matplotlib.pyplot as plt
 from matplotlib import colors
-import threading
+from buildmap import WIDTH, HEIGHT, MAZE_SIZE, RESOLUTION
 
 
 class Environment:
@@ -80,6 +81,14 @@ class Environment:
         
         self.start = start
         self.goal = goal
+
+        #IF NEEDED, GENERALLY SHOULDNT BE USED
+        # Solve the maze
+        m.solver = BackTracker()
+        m.solve()
+
+        # Get the path
+        self.true_path = m.solutions[0]
         
     def generate_map_img(self):
         """Generates a map image and saves it to a file."""
@@ -127,6 +136,11 @@ class Environment:
             if robot_pos not in self.path:
                 self.path.append(robot_pos)
     
+    def grid_to_pixel(self, pos: tuple[int, int]) -> tuple[int, int]:
+        """Converts grid coordinates to pixel coordinates."""
+        
+        return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
+
     def show(self, 
              robot_pos: tuple[int, int], 
              goal: tuple[int, int], 

@@ -9,19 +9,14 @@ SEED = 42
 RMIN = 10
 RMAX = 100
 
-def grid_to_pixel(pos: tuple[int, int]) -> tuple[int, int]:
-    """Converts grid coordinates to pixel coordinates."""
-    
-    return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
-
 def main():
     env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
     laser_ = sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX)
     map_  = buildmap.Map()
     
     start, goal = env_.start, env_.goal
-    robot_pos = grid_to_pixel(start)
-    goal = grid_to_pixel(goal)
+    robot_pos = env_.grid_to_pixel(start)
+    goal = env_.grid_to_pixel(goal)
     running = True
     
     probs = np.zeros((HEIGHT, WIDTH))
@@ -41,7 +36,7 @@ def main():
         #         sensor_on = False
         
         if sensor_on:
-            mouse_pos = pacman.get_next_pos() #pg.mouse.get_pos()
+            mouse_pos = pacman.update_pos(env_) #pg.mouse.get_pos()
             laser_.pos = mouse_pos
             sensor_data = laser_.scan()
             env_.process_data(sensor_data) if sensor_data else None
