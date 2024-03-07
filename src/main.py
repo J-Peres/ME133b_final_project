@@ -9,15 +9,14 @@ SEED = 42
 RMIN = 10
 RMAX = 100
 
-
 def main():
     env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
     laser_ = sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX)
     map_  = buildmap.Map()
     
     start, goal = env_.start, env_.goal
-    robot_pos = start
-    goal = goal
+    robot_pos = env_.grid_to_pixel(start)
+    goal = env_.grid_to_pixel(goal)
     running = True
     
     probs = np.zeros((HEIGHT, WIDTH))

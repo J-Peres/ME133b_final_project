@@ -3,6 +3,7 @@ import pygame as pg
 import numpy as np
 from mazelib import Maze
 from mazelib.generate.Prims import Prims
+from mazelib.solve.BacktrackingSolver import BacktrackingSolver as BackTracker
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from mazelib.solve.BacktrackingSolver import BacktrackingSolver
@@ -97,6 +98,18 @@ class Environment:
         elif start[1] == cols - 1:
             start = (start[0], start[1] - 1)
         
+        self.start = start
+        self.goal = goal
+
+        #IF NEEDED, GENERALLY SHOULDNT BE USED
+        # Solve the maze
+        m.solver = BackTracker()
+        m.solve()
+
+        # Get the path
+        self.true_path = m.solutions[0]
+        
+    def generate_map_img(self):
         self.start = self.grid_to_pixel(start)
         self.goal = self.grid_to_pixel(goal)
     
@@ -145,6 +158,17 @@ class Environment:
             
             if robot_pos not in self.path:
                 self.path.append(robot_pos)
+    
+    def grid_to_pixel(self, pos: tuple[int, int]) -> tuple[int, int]:
+        """Converts grid coordinates to pixel coordinates."""
+        
+        return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
+
+    def show(self, 
+             robot_pos: tuple[int, int], 
+             goal: tuple[int, int], 
+             probs: np.ndarray,
+             mini_update: bool):
                 if len(self.path) > 1:
                     pg.draw.line(self.map, COLORS['blue'], self.path[-2], self.path[-1], 3)
                 
