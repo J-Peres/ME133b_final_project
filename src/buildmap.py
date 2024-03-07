@@ -59,8 +59,8 @@ class Map:
         """
 
         Args:
-            data (list[list[float, float, tuple[int, int]]]): list of laser scan data
-                data[i] = [r, theta, laser_pos]
+            list[list[float, float, tuple[int, int], bool]]: list of laser scan data
+                data[i] = [r, theta, laser_pos, is_obstacle]
         """
         
         # If no scanned data, return
@@ -73,15 +73,15 @@ class Map:
         xs = xc
         ys = yc
         
-        for r, theta, _ in data:
+        for r, theta, _, is_obstacle in data:
             if rmin < r:
                 l_occ = LOCCUPIED
-                if r > rmax:
+                if not is_obstacle:
                     l_occ = 0
                 
                 # Calculate the endpoint of the laser
                 x_r = xc + r * np.cos(theta)
-                y_r = yc + r * np.sin(theta)
+                y_r = yc - r * np.sin(theta)
                 
                 # Convert the endpoint to pixel coordinates
                 xe = x_r

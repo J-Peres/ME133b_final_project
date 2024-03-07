@@ -37,7 +37,6 @@ class Environment:
         self.walls = None
         self.start = None
         self.goal = None
-        self.point_cloud = []
         self.path = []
         self.map_file = f"maps\map_{seed}_{map_size}.png"
         
@@ -141,14 +140,15 @@ class Environment:
         """Processes the laser scan data and stores it in the point cloud.
 
         Args:
-            data (list[list[float, float, tuple[int, int]]]): list of laser scan data
-                data[i] = [distance, angle, robot_pos]
+            data (list[list[float, float, tuple[int, int], bool]]): list of laser scan data
+                data[i] = [distance, angle, robot_pos, is_obstacle]
         """
-        for distance, angle, robot_pos in data:
+        self.point_cloud = []
+        for distance, angle, robot_pos, is_obstacle in data:
             # Calculate the position of the point
             point = self.calc_point_pos(distance, angle, robot_pos)
             
-            if point not in self.point_cloud:
+            if point not in self.point_cloud and is_obstacle:
                 self.point_cloud.append(point)
                 self.map.set_at(point, COLORS['red'])
             
@@ -164,17 +164,19 @@ class Environment:
             
     def show(self, probs: np.ndarray):
         """Shows the map image with the point cloud."""
-
+        
+        # self.map.blit(self.map_img, (0, 0))
         # Draw the probs
         if probs is not None:
             for i in range(probs.shape[0]):
                 for j in range(probs.shape[1]):
-                    color = tuple(self.map_img_arr[i, j])
-                    if color == (0, 0, 0):
-                        continue
-
                     if probs[i, j] > 0:
-                        self.map.set_at((i, j), (0, 0, int(128 * probs[i, j])))
+                        color = np.array([255, 255, 255]) * (1 - probs[i, j])
+                        self.map.set_at((j, i), color)
+
+        # Draw point cloud
+        for point in self.point_cloud:
+            self.map.set_at(point, COLORS['red'])
 
         # Update the display
         pg.display.flip()

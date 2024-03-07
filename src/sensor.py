@@ -58,8 +58,8 @@ class LaserSensor:
         """Scans the environment for obstacles and returns the data.
         
         Returns:
-            list[list[float, float, tuple[int, int]]]: list of laser scan data
-                data[i] = [distance, angle, robot_pos]
+            list[list[float, float, tuple[int, int], bool]]: list of laser scan data
+                data[i] = [distance, angle, robot_pos, is_obstacle]
                 False if no obstacles are found
         """
         
@@ -76,18 +76,26 @@ class LaserSensor:
                 x = round(target[0] * u + self.pos[0] * (1-u))
                 y = round(target[1] * u + self.pos[1] * (1-u))
                 
+                
                 # Check if the point is within the map
                 if 0 < x < self.w and 0 < y < self.h:
-                    # Check if the point is an obstacle
-                    color = tuple(self.map[x, y])
-                    if color == (0, 0, 0):
-                        # Add the point to the data
-                        distance = self.euclidean((x, y))
-                        if distance > self.rmin:    # Ignore points before rmin
-                            output = self.add_uncertainty(distance, theta, self.sigma)
-                            output.append(self.pos)
+                    distance = self.euclidean((x, y))
+                    output = self.add_uncertainty(distance, theta, self.sigma)
+                    output.append(self.pos)
+                    
+                    if distance > self.rmin:
+                        # Check if the point is an obstacle
+                        color = tuple(self.map[x, y])
+                        if color == (0, 0, 0):
+                            output.append(True)
                             data.append(output)
                             break
+                        
+                    if i == self.scan_resolution - 1:
+                        output.append(False)
+                        data.append(output)
+                        break
+                        
             
         if len(data) > 0:
             return data

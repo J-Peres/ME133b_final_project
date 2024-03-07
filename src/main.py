@@ -11,7 +11,7 @@ RMAX = 100
 
 def main():
     env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
-    laser_ = sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX)
+    laser_ = sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX, heading_resolution=360)
     map_  = buildmap.Map()
     
     start, goal = env_.start, env_.goal
@@ -20,7 +20,7 @@ def main():
     running = True
     
     probs = np.zeros((HEIGHT, WIDTH))
-    pacman = Pacman(robot_pos)
+    pacman = Pacman(robot_pos, 4)
     
     count = 0
     while running:
@@ -39,10 +39,10 @@ def main():
             sensor_data = laser_.scan()
             env_.process_data(sensor_data) if sensor_data else None
             
-            # map_.laserCB(sensor_data, RMIN, RMAX)
-            # probs = map_.get_probs()
+            map_.laserCB(sensor_data, RMIN, RMAX)
+            probs = map_.get_probs()
         
-        env_.show(None)
+        env_.show(probs)
         count += 1
         
         pg.display.update()
