@@ -5,7 +5,7 @@ import numpy as np
 class LaserSensor:
     """The laser sensor class."""
     
-    def __init__(self, map: pg.Surface, uncertainty: tuple[float, float], dims: tuple[int, int], rmin: float, rmax: float):
+    def __init__(self, map: pg.Surface, uncertainty: tuple[float, float], dims: tuple[int, int], rmin: float, rmax: float, scan_resolution: int = 100, heading_resolution: int = 60):
         """Initializes the laser sensor.
         
         Args:
@@ -25,6 +25,8 @@ class LaserSensor:
         
         self.rmax = rmax
         self.sigma = np.array(uncertainty)
+        self.scan_resolution = scan_resolution
+        self.heading_resolution = heading_resolution
         
         self.sensed_obstacles = []
     
@@ -61,19 +63,16 @@ class LaserSensor:
                 False if no obstacles are found
         """
         
-        heading_resolution = 60
-        scan_resolution = 100
-        
         data = []
         
         # Iterate through all headings
-        for theta in np.linspace(0, 2*math.pi, heading_resolution, False):
+        for theta in np.linspace(0, 2*math.pi, self.heading_resolution, False):
             target = (self.pos[0] + self.rmax * math.cos(theta), 
                       self.pos[1] - self.rmax * math.sin(theta))
             
             # Iterate through all points along the ray
-            for i in range(scan_resolution):
-                u = i/scan_resolution
+            for i in range(self.scan_resolution):
+                u = i/self.scan_resolution
                 x = round(target[0] * u + self.pos[0] * (1-u))
                 y = round(target[1] * u + self.pos[1] * (1-u))
                 

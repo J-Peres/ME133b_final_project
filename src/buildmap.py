@@ -3,10 +3,7 @@ import numpy as np
 WIDTH, HEIGHT = 800, 800
 MAZE_SIZE = 20
 
-RESOLUTION =  (MAZE_SIZE + 1) / WIDTH
-ORIGIN_X   = -MAZE_SIZE / 2
-ORIGIN_Y   = -MAZE_SIZE / 2
-
+RESOLUTION =  1
 LFREE     = -0.1     # Set the log odds ratio of detecting freespace
 LOCCUPIED =  0.1     # Set the log odds ratio of detecting occupancy
 
@@ -73,8 +70,8 @@ class Map:
         xc, yc = data[0][2]
 
         # Convert the laser position to pixel coordinates
-        xs = (xc - ORIGIN_X) / RESOLUTION
-        ys = (yc - ORIGIN_Y) / RESOLUTION
+        xs = xc / RESOLUTION
+        ys = yc / RESOLUTION
         
         # for r, theta, _ in data:
         #     if rmin < r:
