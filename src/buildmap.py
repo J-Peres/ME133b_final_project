@@ -3,7 +3,7 @@ import numpy as np
 WIDTH, HEIGHT = 800, 800
 MAZE_SIZE = 20
 
-RESOLUTION =  1
+RESOLUTION =  (MAZE_SIZE + 1) / WIDTH
 LFREE     = -0.1     # Set the log odds ratio of detecting freespace
 LOCCUPIED =  0.1     # Set the log odds ratio of detecting occupancy
 
@@ -70,26 +70,26 @@ class Map:
         xc, yc = data[0][2]
 
         # Convert the laser position to pixel coordinates
-        xs = xc / RESOLUTION
-        ys = yc / RESOLUTION
+        xs = xc
+        ys = yc
         
-        # for r, theta, _ in data:
-        #     if rmin < r:
-        #         l_occ = LOCCUPIED
-        #         if r > rmax:
-        #             l_occ = 0
+        for r, theta, _ in data:
+            if rmin < r:
+                l_occ = LOCCUPIED
+                if r > rmax:
+                    l_occ = 0
                 
-        #         # Calculate the endpoint of the laser
-        #         x_r = xc + r * np.cos(theta)
-        #         y_r = yc + r * np.sin(theta)
+                # Calculate the endpoint of the laser
+                x_r = xc + r * np.cos(theta)
+                y_r = yc + r * np.sin(theta)
                 
-        #         # Convert the endpoint to pixel coordinates
-        #         xe = (x_r - ORIGIN_X) / RESOLUTION
-        #         ye = (y_r - ORIGIN_Y) / RESOLUTION
+                # Convert the endpoint to pixel coordinates
+                xe = x_r
+                ye = y_r
                 
-        #         # Set points from laser to endpoint as free
-        #         for (u, v) in self.bresenham((xs, ys), (xe, ye)):
-        #             self.adjust(u, v, LFREE)
+                # Set points from laser to endpoint as free
+                for (u, v) in self.bresenham((xs, ys), (xe, ye)):
+                    self.adjust(u, v, LFREE)
                 
-        #         # Set the endpoint as occupied
-        #         self.set(int(xe), int(ye), l_occ)
+                # Set the endpoint as occupied
+                self.set(int(xe), int(ye), l_occ)

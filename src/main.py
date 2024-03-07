@@ -9,10 +9,6 @@ SEED = 42
 RMIN = 10
 RMAX = 100
 
-def grid_to_pixel(pos: tuple[int, int]) -> tuple[int, int]:
-    """Converts grid coordinates to pixel coordinates."""
-    
-    return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
 
 def main():
     env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
@@ -20,36 +16,34 @@ def main():
     map_  = buildmap.Map()
     
     start, goal = env_.start, env_.goal
-    robot_pos = grid_to_pixel(start)
-    goal = grid_to_pixel(goal)
+    robot_pos = start
+    goal = goal
     running = True
     
     probs = np.zeros((HEIGHT, WIDTH))
-
     pacman = Pacman(robot_pos)
     
     count = 0
     while running:
-        sensor_on = True #False
-        # for event in pg.event.get():
-        #     if event.type == pg.QUIT:
-        #         print("Quitting...")
-        #         running = False
+        sensor_on = True
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                print("Quitting...")
+                running = False
         #     if pg.mouse.get_focused():
         #         sensor_on = True
         #     elif not pg.mouse.get_focused():
         #         sensor_on = False
         
         if sensor_on:
-            mouse_pos = pacman.get_next_pos() #pg.mouse.get_pos()
-            laser_.pos = mouse_pos
+            laser_.pos = pacman.get_next_pos() #pg.mouse.get_pos()
             sensor_data = laser_.scan()
             env_.process_data(sensor_data) if sensor_data else None
             
             # map_.laserCB(sensor_data, RMIN, RMAX)
             # probs = map_.get_probs()
         
-        env_.show(pacman.pos, goal, probs, mini_update=(count % 500 == 0))
+        env_.show(probs)
         count += 1
         
         pg.display.update()

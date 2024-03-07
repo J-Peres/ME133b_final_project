@@ -5,8 +5,16 @@ from mazelib import Maze
 from mazelib.generate.Prims import Prims
 import matplotlib.pyplot as plt
 from matplotlib import colors
-import threading
+from mazelib.solve.BacktrackingSolver import BacktrackingSolver
+from buildmap import RESOLUTION
 
+COLORS = {
+    'black': (0, 0, 0),
+    'white': (255, 255, 255),
+    'red': (255, 0, 0),
+    'green': (0, 255, 0),
+    'blue': (0, 0, 255)
+}
 
 class Environment:
     """The environment for the map and point cloud generated from a laser 
@@ -46,6 +54,17 @@ class Environment:
         self.map_img = pg.image.load(self.map_file)
         self.map_img_arr = pg.surfarray.array3d(self.map_img)
         
+        # Draw the map
+        self.map.blit(self.map_img, (0, 0))
+        
+        # Draw goal
+        pg.draw.circle(self.map, COLORS['green'], self.goal, 25)
+    
+    def grid_to_pixel(self, pos: tuple[int, int]) -> tuple[int, int]:
+        """Converts grid coordinates to pixel coordinates."""
+        
+        return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
+        
     def generate_maze(self):
         """Generates a maze and sets the walls, start, and goal."""
         
@@ -71,17 +90,17 @@ class Environment:
         if start[0] == 0:
             start = (start[0] + 1, start[1])
         elif start[0] == rows - 1:
-            start =     (start[0] - 1, start[1])
+            start = (start[0] - 1, start[1])
 
         if start[1] == 0:
             start = (start[0], start[1] + 1)
         elif start[1] == cols - 1:
             start = (start[0], start[1] - 1)
         
-        self.start = start
-        self.goal = goal
-        
-    def generate_map_img(self):
+        self.start = self.grid_to_pixel(start)
+        self.goal = self.grid_to_pixel(goal)
+    
+    def generate_map_img(self, display=False):
         """Generates a map image and saves it to a file."""
         
         # Create an image of the maze
@@ -91,8 +110,7 @@ class Environment:
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         plt.axis('off')
         plt.savefig(self.map_file)
-        plt.show()
-        
+        plt.show() if display else None
     
     def calc_point_pos(self, distance: float, angle: float, robot_pos: tuple[int, int]) -> tuple[int, int]:
         """Calculates the position of a point away from robot.
@@ -123,49 +141,27 @@ class Environment:
             
             if point not in self.point_cloud:
                 self.point_cloud.append(point)
+                self.map.set_at(point, COLORS['red'])
             
             if robot_pos not in self.path:
                 self.path.append(robot_pos)
+                if len(self.path) > 1:
+                    pg.draw.line(self.map, COLORS['blue'], self.path[-2], self.path[-1], 3)
+                
     
-    def show(self, 
-             robot_pos: tuple[int, int], 
-             goal: tuple[int, int], 
-             probs: np.ndarray,
-             mini_update: bool):
+    def show(self, probs: np.ndarray):
         """Shows the map image with the point cloud."""
-        
-        # Draw the map
-        self.map.blit(self.map_img, (0, 0))
-        
-        # Draw the point cloud
-        for point in self.point_cloud:
-            pg.draw.circle(self.map, (255, 0, 0), point, 1)
-        
-        # Draw the path
-        for i in range(len(self.path) - 1):
-            pg.draw.line(self.map, (0, 0, 255), self.path[i], self.path[i + 1], 3)
-            
-        # Draw the robot
-        if robot_pos is not None:
-            pg.draw.circle(self.map, (0, 0, 255), robot_pos, 5)
-        
-        # Draw the goal
-        if goal is not None:
-            pg.draw.circle(self.map, (0, 255, 0), goal, 25)
 
         # Draw the probs
-        if mini_update:
-            if probs is not None:
-                for i in range(probs.shape[0]):
-                    for j in range(probs.shape[1]):
-                        color = tuple(self.map_img_arr[i, j])
-                        if color == (0, 0, 0):
-                            continue
+        if probs is not None:
+            for i in range(probs.shape[0]):
+                for j in range(probs.shape[1]):
+                    color = tuple(self.map_img_arr[i, j])
+                    if color == (0, 0, 0):
+                        continue
 
-                        if probs[i, j] > 0:
-                            self.map.set_at((j, i), (0, 0, int(128 * probs[i, j])))
-        
-
+                    if probs[i, j] > 0:
+                        self.map.set_at((i, j), (0, 0, int(128 * probs[i, j])))
 
         # Update the display
         pg.display.flip()

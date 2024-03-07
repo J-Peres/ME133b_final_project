@@ -28,7 +28,7 @@ def main():
             sensor_data = laser.scan()
             env_.process_data(sensor_data) if sensor_data else None
         
-        env_.show(None, None, None)
+        env_.show(None)
         
         pg.display.update()
     
