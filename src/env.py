@@ -39,6 +39,7 @@ class Environment:
         self.start = None
         self.goal = None
         self.path = []
+        self.point_cloud = []
         self.map_file = f"maps\map_{seed}_{map_size}.png"
         
         # Generate the maze and map image
@@ -144,14 +145,17 @@ class Environment:
             data (list[list[float, float, tuple[int, int], bool]]): list of laser scan data
                 data[i] = [distance, angle, robot_pos, is_obstacle]
         """
+        # Reset point cloud
+        for point in self.point_cloud:
+            self.map.set_at(point, self.map_img_arr[point[0], point[1]])
         self.point_cloud = []
+        
         for distance, angle, robot_pos, is_obstacle in data:
             # Calculate the position of the point
             point = self.calc_point_pos(distance, angle, robot_pos)
             
             if point not in self.point_cloud and is_obstacle:
                 self.point_cloud.append(point)
-                self.map.set_at(point, COLORS['red'])
             
             if robot_pos not in self.path:
                 self.path.append(robot_pos)
@@ -179,6 +183,7 @@ class Environment:
         # Draw point cloud
         for point in self.point_cloud:
             self.map.set_at(point, COLORS['red'])
+            # pg.draw.circle(self.map, COLORS['red'], point, 1)
 
         # Update the display
         pg.display.flip()

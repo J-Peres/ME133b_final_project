@@ -86,7 +86,7 @@ class Map:
         for r, theta, _, is_obstacle in data:
             if rmin < r:
                 l_occ = LOCCUPIED
-                if not is_obstacle:
+                if not is_obstacle or r >= rmax:
                     l_occ = 0
                 
                 # Calculate the endpoint of the laser
@@ -102,4 +102,4 @@ class Map:
                     self.adjust(u, v, LFREE)
                 
                 # Set the endpoint as occupied
-                self.set(int(xe), int(ye), l_occ)
+                self.adjust(int(xe), int(ye), l_occ)
