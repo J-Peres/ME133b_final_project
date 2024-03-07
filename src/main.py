@@ -11,7 +11,7 @@ RMAX = 100
 
 def main():
     env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
-    laser_ = sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX, heading_resolution=360)
+    laser_ = sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX, scan_resolution=15, heading_resolution=120)
     map_  = buildmap.Map()
     
     start, goal = env_.start, env_.goal

@@ -1,6 +1,7 @@
 import pygame as pg
 import math
 import numpy as np
+import time
 
 class LaserSensor:
     """The laser sensor class."""
@@ -87,6 +88,21 @@ class LaserSensor:
                         # Check if the point is an obstacle
                         color = tuple(self.map[x, y])
                         if color == (0, 0, 0):
+
+                            prev_u = (i - 1)/self.scan_resolution
+                            prev_x = round(target[0] * u + self.pos[0] * (1-u))
+                            prev_y = round(target[1] * u + self.pos[1] * (1-u))
+
+                            central_point = np.array([prev_x, prev_y])
+                            perc = .1
+                            while tuple(self.map[central_point[0], central_point[1]]) != (0, 0, 0):
+                                central_point = central_point + perc * (np.array([x, y]) - central_point)
+                                prec += .1
+
+                            distance = self.euclidean((central_point[0], central_point[1]))
+                            output = self.add_uncertainty(distance, theta, self.sigma)
+                            output.append(self.pos)
+
                             output.append(True)
                             data.append(output)
                             break
@@ -95,8 +111,7 @@ class LaserSensor:
                         output.append(False)
                         data.append(output)
                         break
-                        
-            
+
         if len(data) > 0:
             return data
         else:

@@ -27,13 +27,7 @@ class Map:
             self.old_prob = probs
             changes = [(i, j) for i in range(HEIGHT) for j in range(WIDTH)]
         else:
-            start_time = time.time()
             changes = np.argwhere(np.abs(probs - self.old_prob) > 0.01)
-            end_time = time.time()
-            execution_time = end_time - start_time
-
-            print("Execution time:", execution_time, "seconds")
-
             self.old_prob = probs
         
         return probs, changes
@@ -88,8 +82,6 @@ class Map:
         # Convert the laser position to pixel coordinates
         xs = xc
         ys = yc
-
-        start_time = time.time()
         
         for r, theta, _, is_obstacle in data:
             if rmin < r:
@@ -111,7 +103,3 @@ class Map:
                 
                 # Set the endpoint as occupied
                 self.set(int(xe), int(ye), l_occ)
-
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print("Execution time laserCB:", execution_time, "seconds")
