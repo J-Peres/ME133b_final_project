@@ -94,10 +94,10 @@ class LaserSensor:
                             prev_y = round(target[1] * prev_u + self.pos[1] * (1-prev_u))
 
                             central_point = np.array([prev_x, prev_y])
-                            perc = .1
+                            perc = .03
                             while tuple(self.map[int(central_point[0]), int(central_point[1])]) != (0, 0, 0):
                                 central_point = np.round(central_point + perc * (np.array([x, y]) - central_point))
-                                perc += .1
+                                perc += .03
 
                             distance = self.euclidean((central_point[0], central_point[1]))
                             output = self.add_uncertainty(distance, theta, self.sigma)

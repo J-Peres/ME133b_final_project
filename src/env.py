@@ -66,6 +66,13 @@ class Environment:
         """Converts grid coordinates to pixel coordinates."""
         
         return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
+
+    def pixel_to_grid(self, pos: tuple[int, int]) -> tuple[int, int]:
+        """Converts pixel coordinates to grid coordinates."""
+        
+        return (pos[1] * RESOLUTION - 0.5, pos[0] * RESOLUTION - 0.5)
+        
+        # ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
         
     def generate_maze(self):
         """Generates a maze and sets the walls, start, and goal."""
@@ -98,7 +105,17 @@ class Environment:
             start = (start[0], start[1] + 1)
         elif start[1] == cols - 1:
             start = (start[0], start[1] - 1)
-        
+
+        if goal[0] == 0:
+            goal = (goal[0] + 1, goal[1])
+        elif goal[0] == rows - 1:
+            goal = (goal[0] - 1, goal[1])
+
+        if goal[1] == 0:
+            goal = (goal[0], goal[1] + 1)
+        elif goal[1] == cols - 1:
+            goal = (goal[0], goal[1] - 1)
+
         self.start = self.grid_to_pixel(start)
         self.goal = self.grid_to_pixel(goal)
 
@@ -167,12 +184,12 @@ class Environment:
         
         return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
             
-    def show(self, probs: np.ndarray, changes: np.ndarray):
+    def show(self, probs: np.ndarray = None, changes: np.ndarray = None):
         """Shows the map image with the point cloud."""
         
         # self.map.blit(self.map_img, (0, 0))
         # Draw the probs
-        if probs is not None:
+        if probs is not None and changes is not None:
             for (i, j) in changes:
             # for i in range(probs.shape[0]):
             #     for j in range(probs.shape[1]):

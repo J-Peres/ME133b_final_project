@@ -8,6 +8,7 @@ import numpy as np
 SEED = 42
 RMIN = 10
 RMAX = 100
+RUN_EST = True
 
 def main():
     env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
@@ -20,8 +21,11 @@ def main():
     running = True
     
     probs = np.zeros((HEIGHT, WIDTH))
-    pacman = Pacman(robot_pos, 4)
-    
+    pacman = Pacman(robot_pos, goal, 10)
+
+    if RUN_EST:
+        pacman.est(env_)
+
     count = 0
     while running:
         sensor_on = True
@@ -36,13 +40,19 @@ def main():
         
         if sensor_on:
             laser_.pos = pacman.update_pos(env_) #pg.mouse.get_pos()
+            if laser_.pos is None:
+                print('GOAL REACHED!')
+                return
             sensor_data = laser_.scan()
             env_.process_data(sensor_data) if sensor_data else None
             
             map_.laserCB(sensor_data, RMIN, RMAX)
             probs, changes = map_.get_probs()
-        
-        env_.show(probs, changes)
+
+        if RUN_EST:
+            env_.show(None)
+        else:
+            env_.show(probs, changes)
         count += 1
         
         pg.display.update()
