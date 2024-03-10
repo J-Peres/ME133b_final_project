@@ -17,12 +17,10 @@ from shapely.prepared   import prep
 #
 #   Define the step size.  Also set the maximum number of nodes.
 #
-DSTEP = 5
+DSTEP = .5
 
-# Maximum number of steps (attempts) or nodes (successful steps).
-SMAX = 50000
+# Maximum number of nodes.
 NMAX = 1500
-
 ######################################################################
 #
 #   World Definitions
@@ -87,9 +85,9 @@ class Node:
 
 ######################################################################
 #
-#   RRT Functions
+#   EST Functions
 #
-def rrt(startnode, goalnode, visual):
+def est(startnode, goalnode, visual):
     # Start the tree with the startnode (set no parent just in case).
     startnode.parent = None
     tree = [startnode]
@@ -108,63 +106,76 @@ def rrt(startnode, goalnode, visual):
     def distance_ghost_2(self, other):
         return sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
     # Loop - keep growing the tree.
-
-    
-    steps = 0
-    
-    xknown = ()  #list of all known x and y coord in view of lidar
-    yknown = ()
-    
-    def distance_goal(known, goal):
-        return sqrt((xknown - goal.x)**2 + (yknown - goal.y)**2)
-    
     while True:
-        failed_connections = 0
+        # Determine the local density by the number of nodes nearby.
+        # KDTree uses the coordinates to compute the Euclidean distance.
+        # It returns a NumPy array, same length as nodes in the tree.
+        X = np.array([node.coordinates() for node in tree])
+        kdtree  = KDTree(X)
+        numnear = kdtree.query_ball_point(X, r=1.5*DSTEP, return_length=True)
+
+        # Directly determine the distances to the goal node.
+        distances = np.array([node.distance(goalnode) for node in tree])
+
+        # Select the node from which to grow, which minimizes some metric.
+        scale = 5
+        grownode = tree[np.argmin(numnear)]
+    
+        xknown = ()  #list of all known x and y coord in view of lidar
+        yknown = ()
+    
+        def distance_goal(known, goal):
+            return sqrt((xknown - goal.x)**2 + (yknown - goal.y)**2)
+    
+        while True:
+            failed_connections = 0
         
         # Determine the target state.
         
-        if distance_ghost_1 >= distance_ghost_2:
+            if distance_ghost_1 >= distance_ghost_2:
             #tell ghost cost of turning or going that direction... maybe with a theta idk
-            turn_factor = ()
+                turn_factor = ()
             
-        else:
+            else:
             #tell ghost cost of turning other direction high
-            turn_factor = ()
-        
+                turn_factor = ()
+
         #lowkey this target node more so based of of est_triangles from hw 4.. maybe do est?    
             
-        min_list = distance_goal + failed_connections + turn_factor
-        targetnode = np.argmin(min_list)    
+            min_list = distance_goal + failed_connections + turn_factor
+            targetnode = np.argmin(min_list)    
         
             
         # Directly determine the distances to the target node.
-        distances = np.array([node.distance(targetnode) for node in tree])
-        index     = np.argmin(distances)
-        nearnode  = tree[index]
-        d         = distances[index]
+            distances = np.array([node.distance(targetnode) for node in tree])
+            index     = np.argmin(distances)
+            nearnode  = tree[index]
+            d         = distances[index]
 
         # Determine the next node.
-        heading = atan2(targetnode.y - nearnode.y, targetnode.x - nearnode.x)
-        stepsize = DSTEP
-        if nearnode.distance(targetnode) < DSTEP: stepsize = nearnode.distance(targetnode)
-        nextnode_coords = (nearnode.x + stepsize * cos(heading), nearnode.y + stepsize * sin(heading))
-        nextnode = Node(x=nextnode_coords[0], y=nextnode_coords[1])
+            heading = atan2(targetnode.y - nearnode.y, targetnode.x - nearnode.x)
+            stepsize = DSTEP
+            if nearnode.distance(targetnode) < DSTEP: stepsize = nearnode.distance(targetnode)
+            nextnode_coords = (nearnode.x + stepsize * cos(heading), nearnode.y + stepsize * sin(heading))
+            nextnode = Node(x=nextnode_coords[0], y=nextnode_coords[1])
 
-        # Check whether to attach.
-        if nextnode.inFreespace() and nearnode.connectsTo(nextnode):
-            addtotree(nearnode, nextnode)
 
-            # If within DSTEP, also try connecting to the goal.  If
-            # the connection is made, break the loop to stop growing.
-           
-            if nextnode.distance(goalnode) <= DSTEP:
-                if nextnode.connectsTo(goalnode): 
-                    addtotree(nextnode, goalnode)
-                    break
+            if nextnode.inFreespace() and grownode.connectsTo(nextnode):
+                addtotree(grownode, nextnode)
+                break
+            
+        # Once grown, also check whether to connect to goal.
+        if nextnode.distance(goalnode) <= DSTEP:
+            if nextnode.connectsTo(goalnode): 
+                addtotree(nextnode, goalnode)
+                break
         else:
             failed_connections += 1              
             
         
+
+
+    
 
 
 
