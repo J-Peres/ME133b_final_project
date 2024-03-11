@@ -8,7 +8,10 @@ import numpy as np
 SEED = 42
 RMIN = 10
 RMAX = 100
-RUN_EST = True
+
+# path = 'est'
+# path = 'true'
+path = None
 
 def main():
     env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
@@ -21,10 +24,12 @@ def main():
     running = True
     
     probs = np.zeros((HEIGHT, WIDTH))
-    pacman = Pacman(robot_pos, goal, 10)
+    changes = None
+    
+    pacman = Pacman(robot_pos, goal, env_, 10)
 
-    if RUN_EST:
-        pacman.est(env_)
+    if path == 'est':
+        pacman.est()
 
     count = 0
     while running:
@@ -33,30 +38,41 @@ def main():
             if event.type == pg.QUIT:
                 print("Quitting...")
                 running = False
-        #     if pg.mouse.get_focused():
-        #         sensor_on = True
-        #     elif not pg.mouse.get_focused():
-        #         sensor_on = False
+            if pg.mouse.get_focused():
+                # print mouse if press space
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:
+                        print(f'mouse: {pg.mouse.get_pos()}')
+                
+        # if count > 2:
+        #     sensor_on = False   
         
         if sensor_on:
-            laser_.pos = pacman.update_pos(env_) #pg.mouse.get_pos()
+            if path == 'est':
+                laser_.pos = pacman.update_pos(pacman.est_path)
+            elif path == 'true':
+                laser_.pos = pacman.update_pos(env_.true_path) 
+            elif path is None:
+                pacman.update_costs(probs, changes)
+                if probs.max() > 0.5:
+                    pacman.calc_target_pos()
+                laser_.pos = pacman.update_pos(None) 
+
             if laser_.pos is None:
                 print('GOAL REACHED!')
-                return
+                sensor_on = False
+            
             sensor_data = laser_.scan()
             env_.process_data(sensor_data) if sensor_data else None
             
             map_.laserCB(sensor_data, RMIN, RMAX)
             probs, changes = map_.get_probs()
-
-        if RUN_EST:
-            env_.show(None)
-        else:
-            env_.show(probs, changes)
-        count += 1
         
-        pg.display.update()
-    
+        
+        env_.show(probs, changes)
+        count += 1
+        pg.display.update() 
+
     pg.quit()
     
 if __name__ == "__main__":

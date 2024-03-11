@@ -1,7 +1,7 @@
 import pygame as pg
 import math
 import numpy as np
-import time
+from utils import euclidean
 
 class LaserSensor:
     """The laser sensor class."""
@@ -30,11 +30,6 @@ class LaserSensor:
         self.heading_resolution = heading_resolution
         
         self.sensed_obstacles = []
-    
-    def euclidean(self, p: tuple[int, int]):
-        """Calculates the euclidean distance between the sensor and a point."""
-        
-        return math.sqrt((p[0] - self.pos[0])**2 + (p[1] - self.pos[1])**2)
     
     def add_uncertainty(self, distance: float, angle: float, sigma) -> list[float, float]:
         """Adds uncertainty to the distance and angle measurements.
@@ -80,7 +75,7 @@ class LaserSensor:
                 
                 # Check if the point is within the map
                 if 0 < x < self.w and 0 < y < self.h:
-                    distance = self.euclidean((x, y))
+                    distance = euclidean((x, y), self.pos)
                     output = self.add_uncertainty(distance, theta, self.sigma)
                     output.append(self.pos)
                     
@@ -99,7 +94,7 @@ class LaserSensor:
                                 central_point = np.round(central_point + perc * (np.array([x, y]) - central_point))
                                 perc += .03
 
-                            distance = self.euclidean((central_point[0], central_point[1]))
+                            distance = euclidean((central_point[0], central_point[1]), self.pos)
                             output = self.add_uncertainty(distance, theta, self.sigma)
                             output.append(self.pos)
 

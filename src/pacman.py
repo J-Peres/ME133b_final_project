@@ -4,9 +4,11 @@ from node import Node
 from scipy.spatial      import KDTree
 from math               import pi, sin, cos, atan2, sqrt, ceil
 import random
+from constants import C_GOAL, C_GHOST, C_LOR, WIDTH, HEIGHT
+from utils import euclidean
 
 class Pacman:
-    def __init__(self, pos: tuple[int, int], goal: tuple[int, int], speed: int = .1):
+    def __init__(self, pos: tuple[int, int], goal: tuple[int, int], env: Environment, speed: int = .1):
         """Initializes the pacman object.
 
         Args:
@@ -17,6 +19,7 @@ class Pacman:
         self.pos = pos
         self.speed = speed
         self.direction = None
+        self.env = env
 
         self.start = pos
         self.goal = goal
@@ -25,31 +28,35 @@ class Pacman:
         self.move = 0
 
         self.intermediate_points = 50
+        
+        self.costs = np.ones((WIDTH, HEIGHT)) * 1e9
+        self.path = [pos]
     
-    def update_pos(self, env):
-        # start = env.grid_to_pixel(env.true_path[self.index])
-        # end = env.grid_to_pixel(env.true_path[self.index + 1])
-
+    def update_pos(self, path):
+        if path is None:
+            path = self.path
+            
         try:
-            start = self.est_path[self.index]
-            end = self.est_path[self.index + 1]
+            start = path[self.index]
+            end = path[self.index + 1]
         except IndexError:
-            return None
- 
+            self.move = 0
+            self.index = 0
+            return self.pos
+        
         new_pos = self.move * (np.array(end) - np.array(start)) / self.intermediate_points + np.array(start)
         self.pos = (int(new_pos[0]), int(new_pos[1]))
-
         if self.move >= self.intermediate_points:
             self.move = 0
             self.index += 1
         else:
             self.move += 1
-
+        
         return self.pos
 
-    def est(self, env):
-        startnode = Node(self.pos[0], self.pos[1], env)
-        goalnode = Node(self.goal[0], self.goal[1], env)
+    def est(self):
+        startnode = Node(self.pos[0], self.pos[1], self.env)
+        goalnode = Node(self.goal[0], self.goal[1], self.env)
 
         # Start the tree with the startnode (set no parent just in case).
         startnode.parent = None
@@ -65,7 +72,6 @@ class Pacman:
 
         # Loop - keep growing the tree.
         while True:
-            # print('HI')
             # Determine the local density by the number of nodes nearby.
             # KDTree uses the coordinates to compute the Euclidean distance.
             # It returns a NumPy array, same length as nodes in the tree.
@@ -108,7 +114,7 @@ class Pacman:
                 # angle = np.random.normal(heading, np.pi/2)
                 
                 # ---------ALL----------
-                nextnode = Node(grownode.x + self.speed*np.cos(angle), grownode.y + self.speed*np.sin(angle), env)
+                nextnode = Node(grownode.x + self.speed*np.cos(angle), grownode.y + self.speed*np.sin(angle), self.env)
 
                 # Try to connect.
                 if nextnode.inFreespace() and (nextnode.connectsTo(grownode)):
@@ -140,7 +146,7 @@ class Pacman:
 
         self.est_path = pos_path
 
-# Post process the path.
+    # Post process the path.
     def PostProcess(self, path):
         i = 0
         while (i < len(path)-2):
@@ -148,3 +154,14 @@ class Pacman:
                 path.pop(i+1)
             else:
                 i = i+1
+    
+    def update_costs(self, probs, changes):
+        if probs is not None and changes is not None:
+            for (i, j) in changes:
+                if probs[i, j] > 0.5:
+                    self.costs[i, j] = C_GOAL * euclidean((i, j), self.goal) + C_GHOST * 0 + C_LOR * probs[i, j]
+        
+    def calc_target_pos(self):
+        target_pos = np.unravel_index(np.argmin(self.costs, axis=None), self.costs.shape)[::-1]
+        print(target_pos)
+        self.path.append(target_pos)
