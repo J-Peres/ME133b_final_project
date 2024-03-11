@@ -72,7 +72,6 @@ class LaserSensor:
                 x = round(target[0] * u + self.pos[0] * (1-u))
                 y = round(target[1] * u + self.pos[1] * (1-u))
                 
-                
                 # Check if the point is within the map
                 if 0 < x < self.w and 0 < y < self.h:
                     distance = euclidean((x, y), self.pos)

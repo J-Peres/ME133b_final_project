@@ -1,6 +1,8 @@
 import numpy as np
 from buildmap import WIDTH, HEIGHT, MAZE_SIZE, RESOLUTION
-from math               import pi, sin, cos, atan2, sqrt, ceil
+from math     import pi, sin, cos, atan2, sqrt, ceil
+from utils    import grid_to_pixel, pixel_to_grid
+from constants import SCAN_RESOLUTION
 
 ######################################################################
 #
@@ -45,13 +47,13 @@ class Node:
         if (self.x <= 0 or self.x >= WIDTH or
             self.y <= 0 or self.y >= HEIGHT):
             return False
-        grid_point = self.env.pixel_to_grid((self.x, self.y))
+        grid_point = pixel_to_grid((self.x, self.y))
         return (self.env.walls[round(grid_point[0]), round(grid_point[1])] == 0)
 
     # Check the local planner - whether this connects to another node.
     def connectsTo(self, other):
-        for i in range(100):
-            if not (self.intermediate(other, i/100).inFreespace()):
+        for i in range(SCAN_RESOLUTION):
+            if not (self.intermediate(other, i/SCAN_RESOLUTION).inFreespace()):
                 return False
         return True
 

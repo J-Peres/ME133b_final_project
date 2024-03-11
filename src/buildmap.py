@@ -14,13 +14,14 @@ class Map:
         
         # Convert the log odds ratio into probabilities (0...1).
         probs = 1 - 1/(1+np.exp(self.logoddsratio))
+        probs = probs.T
 
         if LMAX is not None:
             probs[probs > LMAX] = LMAX
 
         if self.old_prob is None:
             self.old_prob = probs
-            changes = [(i, j) for i in range(HEIGHT) for j in range(WIDTH)]
+            changes = [(i, j) for i in range(WIDTH) for j in range(HEIGHT)]
         else:
             changes = np.argwhere(np.abs(probs - self.old_prob) > 0.01)
             self.old_prob = probs

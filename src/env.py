@@ -155,7 +155,7 @@ class Environment:
             for (i, j) in changes:
                 if probs[i, j] > 0:
                     color = np.array([255, 255, 255]) * (1 - probs[i, j])
-                    self.map.set_at((j, i), color)
+                    self.map.set_at((i, j), color)
 
         # Draw point cloud
         for point in self.point_cloud:
