@@ -1,13 +1,9 @@
 import sensor, env, buildmap
-from buildmap import WIDTH, HEIGHT, MAZE_SIZE, RESOLUTION
+from buildmap import WIDTH, HEIGHT, MAZE_SIZE, RMIN, RMAX, SEED
 from pacman import Pacman
 
 import pygame as pg
 import numpy as np
-
-SEED = 42
-RMIN = 10
-RMAX = 100
 
 # path = 'est'
 # path = 'true'
