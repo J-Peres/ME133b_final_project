@@ -2,3 +2,4 @@ mazelib
 numpy
 matplotlib
 pygame
+scipy
