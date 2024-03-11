@@ -8,15 +8,8 @@ from mazelib.solve.BacktrackingSolver import BacktrackingSolver as BackTracker
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from mazelib.solve.BacktrackingSolver import BacktrackingSolver
-from buildmap import RESOLUTION
-
-COLORS = {
-    'black': (0, 0, 0),
-    'white': (255, 255, 255),
-    'red': (255, 0, 0),
-    'green': (0, 255, 0),
-    'blue': (0, 0, 255)
-}
+from utils import grid_to_pixel, calc_point_pos
+from constants import COLORS
 
 class Environment:
     """The environment for the map and point cloud generated from a laser 
@@ -61,18 +54,6 @@ class Environment:
         
         # Draw goal
         pg.draw.circle(self.map, COLORS['green'], self.goal, 25)
-    
-    def grid_to_pixel(self, pos: tuple[int, int]) -> tuple[int, int]:
-        """Converts grid coordinates to pixel coordinates."""
-        
-        return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
-
-    def pixel_to_grid(self, pos: tuple[int, int]) -> tuple[int, int]:
-        """Converts pixel coordinates to grid coordinates."""
-        
-        return (pos[1] * RESOLUTION - 0.5, pos[0] * RESOLUTION - 0.5)
-        
-        # ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
         
     def generate_maze(self):
         """Generates a maze and sets the walls, start, and goal."""
@@ -116,8 +97,8 @@ class Environment:
         elif goal[1] == cols - 1:
             goal = (goal[0], goal[1] - 1)
 
-        self.start = self.grid_to_pixel(start)
-        self.goal = self.grid_to_pixel(goal)
+        self.start = grid_to_pixel(start)
+        self.goal = grid_to_pixel(goal)
 
         #IF NEEDED, GENERALLY SHOULDNT BE USED
         # Solve the maze
@@ -125,7 +106,10 @@ class Environment:
         m.solve()
 
         # Get the path
-        self.true_path = m.solutions[0]
+        # self.true_path = m.solutions[0]
+        self.true_path = []
+        for i in range(len(m.solutions[0])):
+            self.true_path.append(grid_to_pixel(m.solutions[0][i]))
     
     def generate_map_img(self, display=False):
         """Generates a map image and saves it to a file."""
@@ -138,22 +122,6 @@ class Environment:
         plt.axis('off')
         plt.savefig(self.map_file)
         plt.show() if display else None
-    
-    def calc_point_pos(self, distance: float, angle: float, robot_pos: tuple[int, int]) -> tuple[int, int]:
-        """Calculates the position of a point away from robot.
-
-        Args:
-            distance (float): distace of point from robot
-            angle (float): angle of point from robot
-            robot_pos (tuple[int, int]): (x, y) position of robot in map
-            
-        Returns:
-            tuple[int, int]: (x, y) position of point in map
-        """
-        
-        x =  distance * math.cos(angle) + robot_pos[0]
-        y = -distance * math.sin(angle) + robot_pos[1]
-        return (round(x), round(y))
     
     def process_data(self, data: list[list[float, float, tuple[int, int]]]):
         """Processes the laser scan data and stores it in the point cloud.
@@ -169,7 +137,7 @@ class Environment:
         
         for distance, angle, robot_pos, is_obstacle in data:
             # Calculate the position of the point
-            point = self.calc_point_pos(distance, angle, robot_pos)
+            point = calc_point_pos(distance, angle, robot_pos)
             
             if point not in self.point_cloud and is_obstacle:
                 self.point_cloud.append(point)
@@ -178,21 +146,13 @@ class Environment:
                 self.path.append(robot_pos)
                 if len(self.path) > 1:
                     pg.draw.line(self.map, COLORS['blue'], self.path[-2], self.path[-1], 3)
-    
-    def grid_to_pixel(self, pos: tuple[int, int]) -> tuple[int, int]:
-        """Converts grid coordinates to pixel coordinates."""
-        
-        return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
             
     def show(self, probs: np.ndarray = None, changes: np.ndarray = None):
         """Shows the map image with the point cloud."""
         
-        # self.map.blit(self.map_img, (0, 0))
         # Draw the probs
         if probs is not None and changes is not None:
             for (i, j) in changes:
-            # for i in range(probs.shape[0]):
-            #     for j in range(probs.shape[1]):
                 if probs[i, j] > 0:
                     color = np.array([255, 255, 255]) * (1 - probs[i, j])
                     self.map.set_at((j, i), color)
@@ -200,7 +160,6 @@ class Environment:
         # Draw point cloud
         for point in self.point_cloud:
             self.map.set_at(point, COLORS['red'])
-            # pg.draw.circle(self.map, COLORS['red'], point, 1)
 
         # Update the display
         pg.display.flip()
