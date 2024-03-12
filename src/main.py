@@ -4,10 +4,11 @@ from pacman import Pacman
 
 import pygame as pg
 import numpy as np
+import time
 
-# path = 'est'
+path = 'est'
 # path = 'true'
-path = None
+# path = None
 
 def main():
     env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
@@ -18,11 +19,11 @@ def main():
     robot_pos = start
     goal = goal
     running = True
-    
+
     probs = np.zeros((WIDTH, HEIGHT))
     changes = None
     
-    pacman = Pacman(robot_pos, goal, env_, 5)
+    pacman = Pacman(robot_pos, goal, env_, 15)
 
     if path == 'est':
         pacman.est()
@@ -40,10 +41,10 @@ def main():
                     if event.key == pg.K_SPACE:
                         print(f'mouse: {pg.mouse.get_pos()}')
                         print(pacman.costs[pg.mouse.get_pos()[0], pg.mouse.get_pos()[1]])
-                
-        if count > 100:
-            sensor_on = False   
-        
+
+        # if count > 100:
+        #     sensor_on = False
+
         if sensor_on:
             if path == 'est':
                 pacman.update_pos(pacman.est_path)
@@ -53,15 +54,13 @@ def main():
                 if changes is not None:
                     pacman.update_costs(probs, changes)
                     pacman.update_target_pos()
-                
-            pacman.update_pos(None) 
+                pacman.update_pos(None) 
 
             laser_.pos = pacman.pos
 
             if laser_.pos is None:
-                print('GOAL REACHED!')
                 sensor_on = False
-            
+
             sensor_data = laser_.scan()
             env_.process_data(sensor_data) if sensor_data else None
             
@@ -72,9 +71,12 @@ def main():
             # if count % 10 == 0:
             #     print(f'max cummulative probs: {cummulative_probs.max()}')
         
-        env_.show(probs, changes)
+        if path == 'est':
+            env_.show(None, None, pacman.pos)
+        else:
+            env_.show(probs, changes)
         count += 1
-        pg.display.update() 
+        pg.display.update()
 
     pg.quit()
     

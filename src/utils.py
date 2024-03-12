@@ -19,7 +19,7 @@ def bresenham(start: tuple[int, int], end: tuple[int, int]):
 def grid_to_pixel(pos: tuple[int, int]) -> tuple[int, int]:
     """Converts grid coordinates to pixel coordinates."""
     
-    return (int((pos[1] + 0.5) / RESOLUTION), int((pos[0] + 0.5) / RESOLUTION))
+    return ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
 
 def pixel_to_grid(pos: tuple[int, int]) -> tuple[int, int]:
     """Converts pixel coordinates to grid coordinates."""

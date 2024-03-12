@@ -8,8 +8,9 @@ from mazelib.solve.BacktrackingSolver import BacktrackingSolver as BackTracker
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from mazelib.solve.BacktrackingSolver import BacktrackingSolver
-from utils import grid_to_pixel, calc_point_pos
-from constants import COLORS
+from utils import grid_to_pixel, calc_point_pos, pixel_to_grid
+from constants import *
+from node import Node
 
 class Environment:
     """The environment for the map and point cloud generated from a laser 
@@ -54,6 +55,9 @@ class Environment:
         
         # Draw goal
         pg.draw.circle(self.map, COLORS['green'], self.goal, 25)
+
+        # Learnign walls for EST
+        self.learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
         
     def generate_maze(self):
         """Generates a maze and sets the walls, start, and goal."""
@@ -75,6 +79,11 @@ class Environment:
         m.generate_entrances(True, True)
         start = m.start
         goal = m.end
+
+        # self.walls[3, 4] = 1
+        # self.walls[8, 12] = 0
+        # self.walls[10, 7] = 1
+
 
         # Make sure the start and end not on outer wall
         if start[0] == 0:
@@ -102,14 +111,16 @@ class Environment:
 
         #IF NEEDED, GENERALLY SHOULDNT BE USED
         # Solve the maze
-        m.solver = BackTracker()
-        m.solve()
+        # m.solver = BackTracker()
+        # m.solve()
 
-        # Get the path
-        # self.true_path = m.solutions[0]
-        self.true_path = []
-        for i in range(len(m.solutions[0])):
-            self.true_path.append(grid_to_pixel(m.solutions[0][i]))
+        # print('HEHREHRHE')
+
+        # # Get the path
+        # # self.true_path = m.solutions[0]
+        # self.true_path = []
+        # for i in range(len(m.solutions[0])):
+        #     self.true_path.append(grid_to_pixel(m.solutions[0][i]))
     
     def generate_map_img(self, display=False):
         """Generates a map image and saves it to a file."""
@@ -146,10 +157,20 @@ class Environment:
                 self.path.append(robot_pos)
                 if len(self.path) > 1:
                     pg.draw.line(self.map, COLORS['blue'], self.path[-2], self.path[-1], 3)
+                    # pg.draw.circle(self.map, COLORS['yellow'], self.path[-1], 5)
+                    # pg.draw.circle(self.map, COLORS['white'], self.path[-2], 5)
             
-    def show(self, probs: np.ndarray = None, changes: np.ndarray = None):
+    def show(self, probs: np.ndarray = None, changes: np.ndarray = None, loc: tuple = None):
         """Shows the map image with the point cloud."""
-        
+
+        if loc is not None:
+            pac_loc = pixel_to_grid(loc)
+            pac_loc = (round(pac_loc[0]), round(pac_loc[1]))
+            self.learned_walls[pac_loc[0], pac_loc[1]] = 0
+
+            player_grid = pixel_to_grid(loc)
+            player_grid = (round(player_grid[0]), round(player_grid[1]))
+
         # Draw the probs
         if probs is not None and changes is not None:
             for (i, j) in changes:
@@ -161,5 +182,69 @@ class Environment:
         for point in self.point_cloud:
             self.map.set_at(point, COLORS['red'])
 
+            if loc is not None:
+                p1, p2 = self.get_border_grid(point)
+
+                # ingore edges cus they fuck shit up
+                if p1 is None:
+                    continue
+
+                d1 = np.linalg.norm(np.array(p1) - np.array(player_grid))
+                d2 = np.linalg.norm(np.array(p2) - np.array(player_grid))
+
+                if d1 > d2:
+                    self.learned_walls[p1[0], p1[1]] = 1
+                    self.learned_walls[p2[0], p2[1]] = 0
+                else:
+                    self.learned_walls[p1[0], p1[1]] = 0
+                    self.learned_walls[p2[0], p2[1]] = 1
+
         # Update the display
         pg.display.flip()
+    
+    def round_print(self, loc):
+        print(round(loc[0]), round(loc[1]))
+    
+
+    def get_border_grid(self, loc):
+        valid_pixels = [round(grid_to_pixel((0, i + .5))[0]) for i in range(MAZE_SIZE + 1)]
+        
+        vert_border = -1
+        horiz_border = -1
+
+        for i, val in enumerate(valid_pixels):
+            if abs(loc[0] - val) <= 2:
+                vert_border = i
+            if abs(loc[1] - val) <= 2:
+                horiz_border = i
+        
+        # should be on one
+        if vert_border == -1 and horiz_border == -1:
+            # print('this shouldn\'t happen')
+            return None, None
+
+        # if is an edge, ignore
+        if vert_border != -1 and horiz_border != -1:
+            return None, None
+
+        if vert_border != -1:
+            grid_point_x = round(pixel_to_grid(loc)[0])
+            p1 = (grid_point_x, vert_border)
+            p2 = (grid_point_x, vert_border + 1)
+        else:
+            grid_point_y = round(pixel_to_grid(loc)[1])
+            p1 = (horiz_border, grid_point_y)
+            p2 = (horiz_border + 1, grid_point_y)
+        
+        return [p1, p2]
+    
+    def generate_other_map_img(self, display=False):
+        """Generates a map image and saves it to a file."""
+        # Create an image of the maze
+        colormap = colors.ListedColormap(["green", "white", "black"])
+        plt.figure(figsize=(8, 8))
+        plt.imshow(self.learned_walls, cmap=colormap)
+        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        plt.axis('off')
+        # plt.savefig(self.map_file)
+        plt.show() if display else None

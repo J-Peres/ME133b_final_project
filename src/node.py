@@ -9,7 +9,7 @@ from constants import SCAN_RESOLUTION
 #   Node Definition
 #
 class Node:
-    def __init__(self, x, y, env):
+    def __init__(self, x, y, env, learn = False):
         # Define a parent (cleared for now).
         self.parent = None
 
@@ -18,6 +18,12 @@ class Node:
         self.y = y
 
         self.env = env
+        self.learn = learn
+
+        if learn:
+            self.walls = env.learned_walls
+        else:
+            self.walls = env.walls
 
     ############
     # Utilities:
@@ -30,7 +36,8 @@ class Node:
     def intermediate(self, other, alpha):
         return Node(self.x + alpha * (other.x - self.x),
                     self.y + alpha * (other.y - self.y),
-                    self.env)
+                    self.env,
+                    self.learn)
 
     # Return a tuple of coordinates, used to compute Euclidean distance.
     def coordinates(self):
@@ -47,8 +54,16 @@ class Node:
         if (self.x <= 0 or self.x >= WIDTH or
             self.y <= 0 or self.y >= HEIGHT):
             return False
-        grid_point = pixel_to_grid((self.x, self.y))
-        return (self.env.walls[round(grid_point[0]), round(grid_point[1])] == 0)
+        
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                grid_point = pixel_to_grid((self.x + dx, self.y + dy))
+                try:
+                    if (self.walls[round(grid_point[0]), round(grid_point[1])] == 1):
+                        return False
+                except IndexError:
+                    pass
+        return True
 
     # Check the local planner - whether this connects to another node.
     def connectsTo(self, other):
