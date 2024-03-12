@@ -22,7 +22,7 @@ def main():
     probs = np.zeros((WIDTH, HEIGHT))
     changes = None
     
-    pacman = Pacman(robot_pos, goal, env_, 5)
+    pacman = Pacman(robot_pos, goal, env_, 10)
 
     if path == 'est':
         pacman.est()
@@ -41,8 +41,8 @@ def main():
                         print(f'mouse: {pg.mouse.get_pos()}')
                         print(pacman.costs[pg.mouse.get_pos()[0], pg.mouse.get_pos()[1]])
                 
-        if count > 100:
-            sensor_on = False   
+        # if count > 100:
+        #     sensor_on = False   
         
         if sensor_on:
             if path == 'est':
