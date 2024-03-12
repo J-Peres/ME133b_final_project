@@ -21,6 +21,7 @@ def main():
     
     probs = np.zeros((WIDTH, HEIGHT))
     changes = None
+    pixel_count = np.zeros((WIDTH, HEIGHT))
     
     pacman = Pacman(robot_pos, goal, env_, 10)
 
@@ -50,9 +51,10 @@ def main():
             elif path == 'true':
                 pacman.update_pos(env_.true_path) 
             elif path is None:
-                if changes is not None:
+                if count > 5:
                     pacman.update_costs(probs, changes)
                     pacman.update_target_pos()
+                    
                 
             pacman.update_pos(None) 
 
@@ -67,7 +69,7 @@ def main():
             
             map_.laserCB(sensor_data, RMIN, RMAX)
             probs, changes = map_.get_probs()
-        
+            print(probs[760, 281])
             # Print max cummuative probs
             # if count % 10 == 0:
             #     print(f'max cummulative probs: {cummulative_probs.max()}')

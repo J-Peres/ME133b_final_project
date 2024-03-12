@@ -4,8 +4,8 @@ from node import Node
 from scipy.spatial      import KDTree
 from math               import pi, sin, cos, atan2, sqrt, ceil
 import random
-from constants import C_GOAL, C_GHOST, C_LOR, WIDTH, HEIGHT, COLORS
-from utils import euclidean
+from constants import C_GOAL, C_GHOST, C_LOR, WIDTH, HEIGHT, COLORS, GRID_SIZE
+from utils import euclidean, manhattan
 
 class Pacman:
     def __init__(self, pos: tuple[int, int], goal: tuple[int, int], env: Environment, speed: int = .1):
@@ -32,7 +32,8 @@ class Pacman:
         self.costs = np.ones((WIDTH, HEIGHT)) * 1e9
         self.path = [pos]
         self.target_pos = None
-    
+        self.scan_count = np.zeros((int(WIDTH / GRID_SIZE), int(HEIGHT / GRID_SIZE)))
+        
     def update_pos(self, path):
         if path is None and self.target_pos is not None:
             # Get angle to target_pos
@@ -170,10 +171,17 @@ class Pacman:
     def update_costs(self, probs, changes):
         if probs is not None and changes is not None:
             for (i, j) in changes:
-                node = Node(i, j, self.env)
-                if probs[i, j] > 0.5 and node.inFreespace():
-                    self.costs[i, j] = C_GOAL * euclidean((i, j), self.goal) + C_GHOST * 0 + C_LOR * probs[i, j]
-        
+                curr_node   = Node(self.pos[0], self.pos[1], self.env)
+                target_node = Node(i, j, self.env)
+                
+                grid_point = (i // GRID_SIZE, j // GRID_SIZE)
+                # print(f'(i, j): ({i}, {j}), grid_point: ({grid_point})')
+                self.scan_count[grid_point] += 1
+
+                if target_node.inFreespace():
+                    self.costs[i, j] = C_GOAL * euclidean((i, j), self.goal) + C_GHOST * 0 + C_LOR * self.scan_count[grid_point]
+            print(self.target_pos in changes, self.costs.min(), self.costs[self.target_pos], probs[self.target_pos])
+                
     def update_target_pos(self):
         self.target_pos = np.unravel_index(np.argmin(self.costs, axis=None), self.costs.shape)
         

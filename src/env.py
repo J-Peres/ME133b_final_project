@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from mazelib.solve.BacktrackingSolver import BacktrackingSolver
 from utils import grid_to_pixel, calc_point_pos
-from constants import COLORS
+from constants import COLORS, WIDTH, HEIGHT
 
 class Environment:
     """The environment for the map and point cloud generated from a laser 
@@ -116,7 +116,7 @@ class Environment:
         
         # Create an image of the maze
         colormap = colors.ListedColormap(["white", "black"])
-        plt.figure(figsize=(8, 8))
+        plt.figure(figsize=(WIDTH/100, HEIGHT/100))
         plt.imshow(self.walls, cmap=colormap)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         plt.axis('off')
@@ -149,7 +149,7 @@ class Environment:
             
     def show(self, probs: np.ndarray = None, changes: np.ndarray = None):
         """Shows the map image with the point cloud."""
-        
+        print((760, 281) in changes)
         # Draw the probs
         if probs is not None and changes is not None:
             for (i, j) in changes:

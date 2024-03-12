@@ -105,6 +105,7 @@ def est(startnode, goalnode, visual):
     
     def distance_ghost_2(self, other):
         return sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+    
     # Loop - keep growing the tree.
     while True:
         # Determine the local density by the number of nodes nearby.
