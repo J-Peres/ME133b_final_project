@@ -18,7 +18,7 @@ class Environment:
     scan.
     """
     
-    def __init__(self, dims, seed=1, map_size=20):
+    def __init__(self, dims, seed=1, map_size=20, loops=1):
         """Initializes the map environment.
 
         Args:
@@ -36,11 +36,11 @@ class Environment:
         self.ghost_pos = [None for _ in range(NUM_GHOSTS)]
         self.paths = [[] for _ in range(NUM_GHOSTS + 1)] # pacman, ghost1, ghost2, ...
         self.point_clouds = [[] for _ in range(NUM_GHOSTS + 1)]
-        self.map_file = f"maps\map_{seed}_{map_size}.png"
+        self.map_file = f"maps/map_{seed}_{map_size}.png"
 
         # Generate the maze and map image
-        self.generate_maze()
-        # self.generate_map_img()
+        self.generate_maze(loops)
+        self.generate_map_img()
 
         # Initialize pygame
         pg.init()
@@ -62,10 +62,9 @@ class Environment:
         self.pacman_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
         self.ghosts_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
 
-        self.show_learned_maps()
+        # self.show_learned_maps()
 
-
-    def generate_maze(self):
+    def generate_maze(self, loops):
         """Generates a maze and sets the walls, start, and goal."""
         
         # Set the seed
@@ -87,13 +86,13 @@ class Environment:
         goal = m.end
 
         # force walls and holes
-        self.walls[8, 11] = 0
+        if loops != 0:
+            self.create_maze_loops(loops)
 
         # Randomly select ghost positions
         indices = np.where(self.walls == 0)
-
         indices_list = list(zip(indices[0], indices[1]))
-        
+
         for i in range(NUM_GHOSTS):
             random_index = random.choice(indices_list)
             self.ghost_pos[i] = grid_to_pixel(random_index)
@@ -128,13 +127,37 @@ class Environment:
         # m.solver = BackTracker()
         # m.solve()
 
-        # print('HEHREHRHE')
-
         # # Get the path
         # # self.true_path = m.solutions[0]
         # self.true_path = []
         # for i in range(len(m.solutions[0])):
         #     self.true_path.append(grid_to_pixel(m.solutions[0][i]))
+
+    def create_maze_loops(self, loops):
+        np.random.seed(self.seed) # no seed doesn't shuffle for some reason
+
+        central_points = []
+        rows  = np.size(self.walls, axis=0)
+        cols  = np.size(self.walls, axis=1)
+
+        for r in range(2, rows - 1):
+            for c in range(2, cols - 1):
+                subgraph = self.walls[r - 1: r + 2, c - 1: c + 2]
+                if np.array_equal(subgraph[1], [1, 1, 1]):
+                    if subgraph[0, 1] == 0 and subgraph[2, 1] == 0:
+                        central_points.append((r, c))
+                elif np.array_equal(subgraph[:, 1], [1, 1, 1]):
+                    if subgraph[1, 0] == 0 and subgraph[1, 2] == 0:
+                        central_points.append((r, c))
+
+        np.random.shuffle(central_points)
+        loops = min(loops, len(central_points))
+
+        remove = central_points[:loops]
+
+        for points in remove:
+            self.walls[points[0], points[1]] = 0
+
 
     def generate_map_img(self, display=False):
         """Generates a map image and saves it to a file."""

@@ -12,7 +12,7 @@ path = 'est'
 # path = None
 
 def main():
-    env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE)
+    env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE, loops=7)
     laser_ = sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX, scan_resolution=SCAN_RESOLUTION, heading_resolution=HEADING_RESOLUTION)
     
     ghost_lasers = []
@@ -117,6 +117,7 @@ def main():
         
         if path == 'est':
             env_.show(probs, changes, pacman.pos)
+            # env_.show(None, None, pacman.pos)
             for i, ghost in enumerate(ghosts):
                 env_.show(None, None, ghost.pos, player=i+1)
         else:
@@ -125,8 +126,8 @@ def main():
         count += 1
         pg.display.update()
 
-        if count % 3 == 0:
-            env_.show_learned_maps()
+        # if count % 3 == 0:
+        #     env_.show_learned_maps()
 
     pg.quit()
     
