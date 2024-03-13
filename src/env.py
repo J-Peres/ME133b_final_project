@@ -11,6 +11,7 @@ from mazelib.solve.BacktrackingSolver import BacktrackingSolver
 from utils import grid_to_pixel, calc_point_pos, pixel_to_grid
 from constants import *
 from node import Node
+import random
 
 class Environment:
     """The environment for the map and point cloud generated from a laser 
@@ -32,8 +33,10 @@ class Environment:
         self.walls = None
         self.start = None
         self.goal = None
-        self.path = []
-        self.point_cloud = []
+        self.ghost1 = None
+        self.ghost2 = None
+        self.paths = [[], [], []] # pacman, ghost1, ghost2
+        self.point_clouds = [[], [], []]
         self.map_file = f"maps\map_{seed}_{map_size}.png"
         
         # Generate the maze and map image
@@ -57,7 +60,8 @@ class Environment:
         pg.draw.circle(self.map, COLORS['green'], self.goal, 25)
 
         # Learnign walls for EST
-        self.learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
+        self.pacman_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
+        self.ghosts_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
         
     def generate_maze(self):
         """Generates a maze and sets the walls, start, and goal."""
@@ -80,10 +84,13 @@ class Environment:
         start = m.start
         goal = m.end
 
-        # self.walls[3, 4] = 1
-        # self.walls[8, 12] = 0
-        # self.walls[10, 7] = 1
+        # Randomly select ghost positions
+        indices = np.where(self.walls == 0)
 
+        indices_list = list(zip(indices[0], indices[1]))
+        random_index = random.choice(indices_list)
+        # random_index = (9, 10)
+        self.ghost1 = grid_to_pixel(random_index)
 
         # Make sure the start and end not on outer wall
         if start[0] == 0:
@@ -134,42 +141,45 @@ class Environment:
         plt.savefig(self.map_file)
         plt.show() if display else None
     
-    def process_data(self, data: list[list[float, float, tuple[int, int]]]):
+    def process_data(self, data: list[list[float, float, tuple[int, int]]], player: int = 0):
         """Processes the laser scan data and stores it in the point cloud.
 
         Args:
             data (list[list[float, float, tuple[int, int], bool]]): list of laser scan data
                 data[i] = [distance, angle, robot_pos, is_obstacle]
+            player: 0 for pacman, 1 for ghost1, 2 for ghost2
         """
         # Reset point cloud
-        for point in self.point_cloud:
+        for point in self.point_clouds[player]:
             self.map.set_at(point, self.map_img_arr[point[0], point[1]])
-        self.point_cloud = []
+        self.point_clouds[player] = []
         
+        colors = [COLORS['yellow'], COLORS['green'], COLORS['blue']]
+
         for distance, angle, robot_pos, is_obstacle in data:
             # Calculate the position of the point
             point = calc_point_pos(distance, angle, robot_pos)
             
-            if point not in self.point_cloud and is_obstacle:
-                self.point_cloud.append(point)
-            
-            if robot_pos not in self.path:
-                self.path.append(robot_pos)
-                if len(self.path) > 1:
-                    pg.draw.line(self.map, COLORS['blue'], self.path[-2], self.path[-1], 3)
+            if point not in self.point_clouds[player] and is_obstacle:
+                self.point_clouds[player].append(point)
+
+            if robot_pos not in self.paths[player]:
+                self.paths[player].append(robot_pos)
+                if len(self.paths[player]) > 1:
+                    pg.draw.line(self.map, colors[player], self.paths[player][-2], self.paths[player][-1], 3)
                     # pg.draw.circle(self.map, COLORS['yellow'], self.path[-1], 5)
                     # pg.draw.circle(self.map, COLORS['white'], self.path[-2], 5)
-            
-    def show(self, probs: np.ndarray = None, changes: np.ndarray = None, loc: tuple = None):
+
+    def show(self, probs: np.ndarray = None, changes: np.ndarray = None, loc: tuple = None, player: int = 0):
         """Shows the map image with the point cloud."""
 
-        if loc is not None:
-            pac_loc = pixel_to_grid(loc)
-            pac_loc = (round(pac_loc[0]), round(pac_loc[1]))
-            self.learned_walls[pac_loc[0], pac_loc[1]] = 0
+        to_update = []
 
+        if loc is not None:
             player_grid = pixel_to_grid(loc)
             player_grid = (round(player_grid[0]), round(player_grid[1]))
+
+            to_update.append(((player_grid[0], player_grid[1]), 0))
 
         # Draw the probs
         if probs is not None and changes is not None:
@@ -179,7 +189,7 @@ class Environment:
                     self.map.set_at((i, j), color)
 
         # Draw point cloud
-        for point in self.point_cloud:
+        for point in self.point_clouds[player]:
             self.map.set_at(point, COLORS['red'])
 
             if loc is not None:
@@ -193,18 +203,23 @@ class Environment:
                 d2 = np.linalg.norm(np.array(p2) - np.array(player_grid))
 
                 if d1 > d2:
-                    self.learned_walls[p1[0], p1[1]] = 1
-                    self.learned_walls[p2[0], p2[1]] = 0
+                    to_update.append(((p1[0], p1[1]), 1))
+                    to_update.append(((p2[0], p2[1]), 0))
                 else:
-                    self.learned_walls[p1[0], p1[1]] = 0
-                    self.learned_walls[p2[0], p2[1]] = 1
+                    to_update.append(((p1[0], p1[1]), 0))
+                    to_update.append(((p2[0], p2[1]), 1))
+
+        for (x, y), val in to_update:
+            if player != 0:
+                self.ghosts_learned_walls[x, y] = val
+            else:
+                self.pacman_learned_walls[x, y] = val
 
         # Update the display
         pg.display.flip()
     
     def round_print(self, loc):
         print(round(loc[0]), round(loc[1]))
-    
 
     def get_border_grid(self, loc):
         valid_pixels = [round(grid_to_pixel((0, i + .5))[0]) for i in range(MAZE_SIZE + 1)]
@@ -243,7 +258,7 @@ class Environment:
         # Create an image of the maze
         colormap = colors.ListedColormap(["green", "white", "black"])
         plt.figure(figsize=(8, 8))
-        plt.imshow(self.learned_walls, cmap=colormap)
+        plt.imshow(self.ghosts_learned_walls, cmap=colormap)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         plt.axis('off')
         # plt.savefig(self.map_file)

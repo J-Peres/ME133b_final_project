@@ -9,7 +9,7 @@ from constants import SCAN_RESOLUTION
 #   Node Definition
 #
 class Node:
-    def __init__(self, x, y, env, learn = False):
+    def __init__(self, x, y, env, learn = False, pacman = True):
         # Define a parent (cleared for now).
         self.parent = None
 
@@ -19,9 +19,13 @@ class Node:
 
         self.env = env
         self.learn = learn
+        self.pacman = pacman
 
         if learn:
-            self.walls = env.learned_walls
+            if pacman:
+                self.walls = env.pacman_learned_walls
+            else:
+                self.walls = env.ghosts_learned_walls
         else:
             self.walls = env.walls
 
@@ -37,7 +41,8 @@ class Node:
         return Node(self.x + alpha * (other.x - self.x),
                     self.y + alpha * (other.y - self.y),
                     self.env,
-                    self.learn)
+                    self.learn,
+                    self.pacman)
 
     # Return a tuple of coordinates, used to compute Euclidean distance.
     def coordinates(self):
@@ -55,8 +60,8 @@ class Node:
             self.y <= 0 or self.y >= HEIGHT):
             return False
         
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
+        for dx in [-2, 0, 2]:
+            for dy in [-2, 0, 2]:
                 grid_point = pixel_to_grid((self.x + dx, self.y + dy))
                 try:
                     if (self.walls[round(grid_point[0]), round(grid_point[1])] == 1):
@@ -67,8 +72,8 @@ class Node:
 
     # Check the local planner - whether this connects to another node.
     def connectsTo(self, other):
-        for i in range(SCAN_RESOLUTION):
-            if not (self.intermediate(other, i/SCAN_RESOLUTION).inFreespace()):
+        for i in range(SCAN_RESOLUTION * 3):
+            if not (self.intermediate(other, i/(SCAN_RESOLUTION * 3)).inFreespace()):
                 return False
         return True
 

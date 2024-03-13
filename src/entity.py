@@ -8,9 +8,9 @@ from constants import C_GOAL, C_GHOST, C_LOR, WIDTH, HEIGHT, COLORS
 from utils import euclidean
 from constants import SCAN_RESOLUTION
 
-class Ghost:
-    def __init__(self, pos: tuple[int, int], goal: tuple[int, int], env: Environment, speed: int = .1):
-        """Initializes the ghost object.
+class Entity:
+    def __init__(self, pos: tuple[int, int], goal: tuple[int, int], env: Environment, speed: int = .1, pacman: bool = True):
+        """Initializes the pacman object.
 
         Args:
             pos (tuple[int, int]): initial position of the pacman
@@ -28,34 +28,54 @@ class Ghost:
         self.index = 0
 
         self.intermediate_points = SCAN_RESOLUTION
+
+        self.costs = np.ones((WIDTH, HEIGHT)) * 1e9
+        self.path = [pos]
+        self.target_pos = None
+
+        self.learn = True
+        self.pacman = pacman
     
-    def update_pos(self):
-        try:
-            start = Node(self.pos[0], self.pos[1], self.env, True)
-            end = Node(self.est_path[self.index + 1][0], self.est_path[self.index + 1][1], self.env, True)
-        except IndexError:
-            self.index = 0
-            self.env.generate_other_map_img(display=True)
-            return
+    def update_pos(self, path):
+        if path is None and self.target_pos is not None:
+            # Get angle to target_pos
+            angle = atan2(self.target_pos[1] - self.pos[1], self.target_pos[0] - self.pos[0])
+            # Move pacman
+            new_pos = (int(self.pos[0] + self.speed * cos(angle)), int(self.pos[1] + self.speed * sin(angle)))
+            
+            # color = tuple(self.env.map_img_arr[new_pos[0], new_pos[1]])
+            # if color != COLORS['black']:
+            
+            self.pos = new_pos
+            self.path.append(new_pos)
 
-        # if we can no longer go this way, restart
-        if not start.connectsTo(end):
-            self.est()
-            self.index = 0
-            return
+        if path is not None:
+            try:
+                start = Node(self.pos[0], self.pos[1], self.env, learn=self.learn, pacman=self.pacman)
+                end = Node(path[self.index + 1][0], path[self.index + 1][1], self.env, learn=self.learn, pacman=self.pacman)
+            except IndexError:
+                self.index = 0
+                self.env.generate_other_map_img(display=True)
+                return
 
-        curr_path = np.array(end.coordinates()) - np.array(start.coordinates())
-        if np.linalg.norm(curr_path) > self.speed:
-            new_pos = tuple(self.speed * curr_path / np.linalg.norm(curr_path) + np.array(self.pos))
-        else:
-            new_pos = end.coordinates()
-            self.index += 1
+            # if we can no longer go this way, restart
+            if not start.connectsTo(end):
+                self.est()
+                self.index = 0
+                return
 
-        self.pos = new_pos
+            curr_path = np.array(end.coordinates()) - np.array(start.coordinates())
+            if np.linalg.norm(curr_path) > self.speed:
+                new_pos = tuple(self.speed * curr_path / np.linalg.norm(curr_path) + np.array(self.pos))
+            else:
+                new_pos = end.coordinates()
+                self.index += 1
+
+            self.pos = new_pos
 
     def est(self):
-        startnode = Node(self.pos[0], self.pos[1], self.env, True)
-        goalnode = Node(self.goal[0], self.goal[1], self.env, True)
+        startnode = Node(self.pos[0], self.pos[1], self.env, learn=self.learn, pacman=self.pacman)
+        goalnode = Node(self.goal[0], self.goal[1], self.env, learn=self.learn, pacman=self.pacman)
 
         # Start the tree with the startnode (set no parent just in case).
         startnode.parent = None
@@ -66,8 +86,6 @@ class Ghost:
         def addtotree(oldnode, newnode):
             newnode.parent = oldnode
             tree.append(newnode)
-            # visual.drawEdge(oldnode, newnode, color='g', linewidth=1)
-            # visual.show()
 
         # Loop - keep growing the tree.
         while True:
@@ -94,9 +112,8 @@ class Ghost:
 
             # Find something nearby: keep looping until the tree grows.
             while True:
-                angle = np.random.normal(heading, np.pi/2) # np.pi / 8 makes worse, need to be able to turn 90 deg
-
-                nextnode = Node(grownode.x + self.speed*np.cos(angle), grownode.y + self.speed*np.sin(angle), self.env, True)
+                angle = np.random.normal(heading, np.pi/3)
+                nextnode = Node(grownode.x + self.speed*np.cos(angle), grownode.y + self.speed*np.sin(angle), self.env, learn=self.learn, pacman=self.pacman)
 
                 # Try to connect.
                 if nextnode.inFreespace() and (nextnode.connectsTo(grownode)):
@@ -116,6 +133,7 @@ class Ghost:
         # Build the path.
         path = [goalnode]
         while path[0].parent is not None:
+            print('here')
             path.insert(0, path[0].parent)
         self.PostProcess(path)
 
@@ -125,6 +143,7 @@ class Ghost:
             pos_path.append((node.x, node.y))
 
         self.est_path = pos_path
+        self.tree = path
 
     # Post process the path.
     def PostProcess(self, path):
@@ -135,5 +154,29 @@ class Ghost:
             else:
                 i = i+1
     
-    def update_goal(self, new_goal):
-        self.goal = new_goal
+    def update_costs(self, probs, changes):
+        if probs is not None and changes is not None:
+            for (i, j) in changes:
+                node = Node(i, j, self.env)
+                if probs[i, j] > 0.5 and node.inFreespace():
+                    self.costs[i, j] = C_GOAL * euclidean((i, j), self.goal) + C_GHOST * 0 + C_LOR * probs[i, j]
+        
+    def update_target_pos(self):
+        self.target_pos = np.unravel_index(np.argmin(self.costs, axis=None), self.costs.shape)
+        
+        # curr_node   = Node(self.pos[0], self.pos[1], self.env)
+        # target_node = Node(target_pos[0], target_pos[1], self.env)
+        
+        # if target_node.inFreespace() and (curr_node.connectsTo(target_node)):
+        #     self.target_pos = target_pos
+        
+        # Print target_pos
+        print(f'target_pos: {self.target_pos}')
+        
+        # # Print current pos
+        # print(f'current pos: {self.pos}')
+        
+        # print cost at target_pos
+        print(f'cost at target_pos: {self.costs[self.target_pos]}')
+        # print cost at (258, 227)
+        # print(f'cost at (258, 227): {self.costs[258, 227]}\n')
