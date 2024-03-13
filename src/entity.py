@@ -5,7 +5,7 @@ from scipy.spatial      import KDTree
 from math               import pi, sin, cos, atan2, sqrt, ceil
 import random
 from constants import C_GOAL, C_GHOST, C_LOR, WIDTH, HEIGHT, COLORS
-from utils import euclidean
+from utils import euclidean, get_round_grid, pixel_to_grid, grid_to_pixel
 from constants import SCAN_RESOLUTION
 
 class Entity:
@@ -35,6 +35,8 @@ class Entity:
 
         self.learn = True
         self.pacman = pacman
+
+        self.traversed = np.zeros((np.size(env.walls, axis=0), np.size(env.walls, axis=1)))
     
     def update_pos(self, path):
         if path is None and self.target_pos is not None:
@@ -72,6 +74,8 @@ class Entity:
                 self.index += 1
 
             self.pos = new_pos
+            pix = get_round_grid(new_pos)
+            self.traversed[pix[0], pix[1]] = 1
 
     def est(self):
         startnode = Node(self.pos[0], self.pos[1], self.env, learn=self.learn, pacman=self.pacman)
@@ -86,6 +90,31 @@ class Entity:
         def addtotree(oldnode, newnode):
             newnode.parent = oldnode
             tree.append(newnode)
+
+        this_round_traversed = np.zeros(self.traversed.shape)
+
+        def search_traversed(prev_node, new_spot, change, dist):
+            last = True
+            new_spot_grid = get_round_grid(new_spot.coordinates())
+
+            this_round_traversed[new_spot_grid[0], new_spot_grid[1]] = 1
+
+            for dx, dy in [[-1, 0], [1, 0], [0, -1], [0, 1]]:
+                if (-dx, -dy) == change: # dont go back
+                    continue
+
+                trial_loc = tuple(np.array(new_spot_grid) + np.array([dx, dy]))
+
+                if self.traversed[trial_loc[0], trial_loc[1]] == 1: # we have been that way at some point
+                    pixel = grid_to_pixel(trial_loc)
+                    nextnode = Node(pixel[0], pixel[1], self.env, learn=self.learn, pacman=self.pacman, fuck_factor=10000)
+                    addtotree(new_spot, nextnode)
+
+                    search_traversed(new_spot, nextnode, (dx, dy), dist + 1)
+                    last = False
+
+            if last: # allow us to actually expand from this node
+                new_spot.fuck_factor = dist
 
         # Loop - keep growing the tree.
         while True:
@@ -103,25 +132,41 @@ class Entity:
             choices = [i for i in range(len(numnear)) if numnear[i] == min_neighbors]
             grownode = tree[random.choice(choices)]
 
+            # scale = 2
+            # scale_near = 40
+            # new_metric = np.array([scale_near * numnear[i] + scale * distances[i] for i in range(len(X))])
+            # index     = np.argmin(new_metric)
+            # grownode  = tree[index]
+
             # Check the incoming heading, potentially to bias the next node.
             if grownode.parent is None:
                 heading = 0
             else:
                 heading = atan2(grownode.y - grownode.parent.y,
                                 grownode.x - grownode.parent.x)
+            
+            # print(grownode)
+            # print(get_round_grid(grownode.coordinates()))
 
             # Find something nearby: keep looping until the tree grows.
             while True:
-                angle = np.random.normal(heading, np.pi/3)
+                angle = np.random.normal(heading, np.pi/2)
                 nextnode = Node(grownode.x + self.speed*np.cos(angle), grownode.y + self.speed*np.sin(angle), self.env, learn=self.learn, pacman=self.pacman)
 
                 # Try to connect.
                 if nextnode.inFreespace() and (nextnode.connectsTo(grownode)):
                     addtotree(grownode, nextnode)
+
+                    # grid_spot = get_round_grid(nextnode.coordinates())
+                    # if self.traversed[grid_spot[0], grid_spot[1]] == 1 and this_round_traversed[grid_spot[0], grid_spot[1]] == 0:
+                    #     print('traversing-------------')
+                    #     old_spot = get_round_grid(grownode.coordinates())
+                    #     search_traversed(grownode, nextnode, tuple(np.array(grid_spot) - np.array(old_spot)), 0)
+
                     break
 
             # Once grown, also check whether to connect to goal.
-            if nextnode.connectsTo(goalnode):# and nextnode.distance(goalnode) <= self.speed: # nextnode.distance(goalnode) <= self.speed and 
+            if nextnode.connectsTo(goalnode): # and nextnode.distance(goalnode) <= self.speed: # nextnode.distance(goalnode) <= self.speed and 
                 addtotree(nextnode, goalnode)
                 break
 
@@ -133,7 +178,6 @@ class Entity:
         # Build the path.
         path = [goalnode]
         while path[0].parent is not None:
-            print('here')
             path.insert(0, path[0].parent)
         self.PostProcess(path)
 

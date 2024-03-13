@@ -28,6 +28,13 @@ def pixel_to_grid(pos: tuple[int, int]) -> tuple[int, int]:
     
     # ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
 
+def get_round_grid(pos: tuple[int, int]) -> tuple[int, int]:
+    """Converts pixel coordinates to grid coordinates."""
+    
+    return (round(pos[1] * RESOLUTION - 0.5), round(pos[0] * RESOLUTION - 0.5))
+    
+    # ((pos[1] + 0.5) / RESOLUTION, (pos[0] + 0.5) / RESOLUTION)
+
 def calc_point_pos(distance: float, angle: float, robot_pos: tuple[int, int]) -> tuple[int, int]:
     """Calculates the position of a point away from robot.
 

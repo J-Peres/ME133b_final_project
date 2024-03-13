@@ -27,10 +27,12 @@ def main():
     
     pacman = Entity(robot_pos, goal, env_, 15, pacman=True)
     ghost1 = Entity(env_.ghost1, goal, env_, 15, pacman=False)
+    # ghost2 = Entity(env_.ghost2, goal, env_, 15, pacman=False)
 
     if path == 'est':
         pacman.est()
         ghost1.est()
+        # ghost2.est()
 
     count = 0
     while running:
@@ -54,6 +56,7 @@ def main():
             if path == 'est':
                 pacman.update_pos(pacman.est_path)
                 ghost1.update_pos(ghost1.est_path)
+                # ghost2.update_pos(ghost2.est_path)
             elif path == 'true':
                 pacman.update_pos(env_.true_path) 
             elif path is None:
@@ -64,18 +67,22 @@ def main():
 
             laser_.pos = pacman.pos
             ghost1_laser_.pos = ghost1.pos
+            # ghost2_laser_.pos = ghost2.pos
 
             if laser_.pos is None:
                 sensor_on = False
 
             sensor_data = laser_.scan()
             ghost1_data = ghost1_laser_.scan()
+            # ghost2_data = ghost2_laser_.scan()
 
             env_.process_data(sensor_data) if sensor_data else None
             env_.process_data(ghost1_data, player=1) if ghost1_data else None
+            # env_.process_data(ghost2_data, player=1) if ghost2_data else None
             
             map_.laserCB(sensor_data, RMIN, RMAX)
             map_.laserCB(ghost1_data, RMIN, RMAX)
+            # map_.laserCB(ghost2_data, RMIN, RMAX)
 
             probs, changes = map_.get_probs()
         
@@ -86,6 +93,7 @@ def main():
         if path == 'est':
             env_.show(None, None, pacman.pos)
             env_.show(None, None, ghost1.pos, player=1)
+            # env_.show(None, None, ghost2.pos, player=1)
         else:
             env_.show(probs, changes)
         count += 1
