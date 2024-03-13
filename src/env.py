@@ -37,31 +37,34 @@ class Environment:
         self.paths = [[] for _ in range(NUM_GHOSTS + 1)] # pacman, ghost1, ghost2, ...
         self.point_clouds = [[] for _ in range(NUM_GHOSTS + 1)]
         self.map_file = f"maps\map_{seed}_{map_size}.png"
-        
+
         # Generate the maze and map image
         self.generate_maze()
-        self.generate_map_img()
-        
+        # self.generate_map_img()
+
         # Initialize pygame
         pg.init()
         pg.display.set_caption("map")
         self.map = pg.display.set_mode(dims, pg.RESIZABLE)
         self.original_map = pg.display.set_mode(dims, pg.RESIZABLE)
-        
+
         # Load map image
         self.map_img = pg.image.load(self.map_file)
         self.map_img_arr = pg.surfarray.array3d(self.map_img)
-        
+
         # Draw the map
         self.map.blit(self.map_img, (0, 0))
-        
+
         # Draw goal
         pg.draw.circle(self.map, COLORS['green'], self.goal, 25)
 
         # Learning walls for EST
         self.pacman_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
         self.ghosts_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
-        
+
+        self.show_learned_maps()
+
+
     def generate_maze(self):
         """Generates a maze and sets the walls, start, and goal."""
         
@@ -132,7 +135,7 @@ class Environment:
         # self.true_path = []
         # for i in range(len(m.solutions[0])):
         #     self.true_path.append(grid_to_pixel(m.solutions[0][i]))
-    
+
     def generate_map_img(self, display=False):
         """Generates a map image and saves it to a file."""
         
@@ -144,6 +147,37 @@ class Environment:
         plt.axis('off')
         plt.savefig(self.map_file)
         plt.show() if display else None
+
+    def show_learned_maps(self, display=True):
+        """Shows the learned maps one above the other."""
+
+        # setup figure 1 to dispaly what the pacman and ghosts have learned
+        fig = plt.figure(1, figsize=(4, 8))
+        plt.clf()
+
+        colormap = colors.ListedColormap(["green", "white", "black"])
+
+        ax1 = plt.subplot(2, 1, 1)
+        img1 = ax1.imshow(self.pacman_learned_walls, cmap=colormap)
+        plt.title('Pacman Learned Map')
+        plt.axis('off')
+
+        ax2 = plt.subplot(2, 1, 2)
+        img2 = ax2.imshow(self.ghosts_learned_walls, cmap=colormap)
+        plt.title('Ghosts Learned Map')
+        plt.axis('off')
+
+        plt.subplots_adjust(left=0, right=1, top=.95, bottom=0)
+
+        img1.set_data(self.pacman_learned_walls)
+        img2.set_data(self.ghosts_learned_walls)
+        plt.draw()
+
+        if display:
+            plt.show(block=False)
+        else:
+            plt.close()
+
     
     def process_data(self, data: list[list[float, float, tuple[int, int]]], player: int = 0):
         """Processes the laser scan data and stores it in the point cloud.

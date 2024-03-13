@@ -19,7 +19,7 @@ def main():
     for i in range(NUM_GHOSTS):
         ghost_lasers.append(sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX, scan_resolution=SCAN_RESOLUTION, heading_resolution=HEADING_RESOLUTION))
     
-    map_  = buildmap.Map()
+    map_ = buildmap.Map()
     
     start, goal = env_.start, env_.goal
     robot_pos = start
@@ -121,9 +121,12 @@ def main():
                 env_.show(None, None, ghost.pos, player=i+1)
         else:
             env_.show(probs, changes)
-            
-        count += 1        
+
+        count += 1
         pg.display.update()
+
+        if count % 3 == 0:
+            env_.show_learned_maps()
 
     pg.quit()
     
