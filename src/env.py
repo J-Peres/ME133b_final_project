@@ -84,6 +84,7 @@ class Environment:
         start = m.start
         goal = m.end
 
+        # force walls and holes
         self.walls[8, 11] = 0
 
         # Randomly select ghost positions
@@ -95,7 +96,6 @@ class Environment:
 
         # random_index = random.choice(indices_list)
         # self.ghost2 = grid_to_pixel(random_index)
-
 
         # Make sure the start and end not on outer wall
         if start[0] == 0:
@@ -257,14 +257,3 @@ class Environment:
             p2 = (horiz_border + 1, grid_point_y)
         
         return [p1, p2]
-    
-    def generate_other_map_img(self, display=False):
-        """Generates a map image and saves it to a file."""
-        # Create an image of the maze
-        colormap = colors.ListedColormap(["green", "white", "black"])
-        plt.figure(figsize=(8, 8))
-        plt.imshow(self.ghosts_learned_walls, cmap=colormap)
-        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        plt.axis('off')
-        # plt.savefig(self.map_file)
-        plt.show() if display else None

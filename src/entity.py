@@ -57,7 +57,6 @@ class Entity:
                 end = Node(path[self.index + 1][0], path[self.index + 1][1], self.env, learn=self.learn, pacman=self.pacman)
             except IndexError:
                 self.index = 0
-                self.env.generate_other_map_img(display=True)
                 return
 
             # if we can no longer go this way, restart
@@ -114,7 +113,7 @@ class Entity:
                     last = False
 
             if last: # allow us to actually expand from this node
-                new_spot.fuck_factor = dist
+                new_spot.fuck_factor = dist * 38
 
         # Loop - keep growing the tree.
         while True:
@@ -128,15 +127,15 @@ class Entity:
             # Directly determine the distances to the goal node.
             distances = np.array([node.distance(goalnode) for node in tree])
 
-            min_neighbors = min(numnear)
-            choices = [i for i in range(len(numnear)) if numnear[i] == min_neighbors]
-            grownode = tree[random.choice(choices)]
+            # min_neighbors = min(numnear)
+            # choices = [i for i in range(len(numnear)) if numnear[i] == min_neighbors]
+            # grownode = tree[random.choice(choices)]
 
-            # scale = 2
-            # scale_near = 40
-            # new_metric = np.array([scale_near * numnear[i] + scale * distances[i] for i in range(len(X))])
-            # index     = np.argmin(new_metric)
-            # grownode  = tree[index]
+            scale = 1
+            scale_near = 50
+            new_metric = np.array([scale_near * numnear[i] + scale * distances[i] for i in range(len(X))])
+            index     = np.argmin(new_metric)
+            grownode  = tree[index]
 
             # Check the incoming heading, potentially to bias the next node.
             if grownode.parent is None:
@@ -157,11 +156,10 @@ class Entity:
                 if nextnode.inFreespace() and (nextnode.connectsTo(grownode)):
                     addtotree(grownode, nextnode)
 
-                    # grid_spot = get_round_grid(nextnode.coordinates())
-                    # if self.traversed[grid_spot[0], grid_spot[1]] == 1 and this_round_traversed[grid_spot[0], grid_spot[1]] == 0:
-                    #     print('traversing-------------')
-                    #     old_spot = get_round_grid(grownode.coordinates())
-                    #     search_traversed(grownode, nextnode, tuple(np.array(grid_spot) - np.array(old_spot)), 0)
+                    grid_spot = get_round_grid(nextnode.coordinates())
+                    if self.traversed[grid_spot[0], grid_spot[1]] == 1 and this_round_traversed[grid_spot[0], grid_spot[1]] == 0:
+                        old_spot = get_round_grid(grownode.coordinates())
+                        search_traversed(grownode, nextnode, tuple(np.array(grid_spot) - np.array(old_spot)), 0)
 
                     break
 
