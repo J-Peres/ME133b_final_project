@@ -33,10 +33,9 @@ class Environment:
         self.walls = None
         self.start = None
         self.goal = None
-        self.ghost1 = None
-        self.ghost2 = None
-        self.paths = [[], [], []] # pacman, ghost1, ghost2
-        self.point_clouds = [[], [], []]
+        self.ghost_pos = [None for _ in range(NUM_GHOSTS)]
+        self.paths = [[] for _ in range(NUM_GHOSTS + 1)] # pacman, ghost1, ghost2, ...
+        self.point_clouds = [[] for _ in range(NUM_GHOSTS + 1)]
         self.map_file = f"maps\map_{seed}_{map_size}.png"
         
         # Generate the maze and map image
@@ -59,7 +58,7 @@ class Environment:
         # Draw goal
         pg.draw.circle(self.map, COLORS['green'], self.goal, 25)
 
-        # Learnign walls for EST
+        # Learning walls for EST
         self.pacman_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
         self.ghosts_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
         
@@ -91,11 +90,11 @@ class Environment:
         indices = np.where(self.walls == 0)
 
         indices_list = list(zip(indices[0], indices[1]))
-        random_index = random.choice(indices_list)
-        self.ghost1 = grid_to_pixel(random_index)
-
-        # random_index = random.choice(indices_list)
-        # self.ghost2 = grid_to_pixel(random_index)
+        
+        for i in range(NUM_GHOSTS):
+            random_index = random.choice(indices_list)
+            self.ghost_pos[i] = grid_to_pixel(random_index)
+            indices_list.remove(random_index)
 
         # Make sure the start and end not on outer wall
         if start[0] == 0:
@@ -170,10 +169,10 @@ class Environment:
 
             if robot_pos not in self.paths[player]:
                 self.paths[player].append(robot_pos)
-                if len(self.paths[player]) > 1:
-                    pg.draw.line(self.map, colors[player], self.paths[player][-2], self.paths[player][-1], 3)
-                    # pg.draw.circle(self.map, COLORS['blue'], self.paths[player][-1], 5)
-                    # pg.draw.circle(self.map, COLORS['white'], self.paths[player][-2], 5)
+                # if len(self.paths[player]) > 1:
+                #     pg.draw.line(self.map, colors[player], self.paths[player][-2], self.paths[player][-1], 3)
+                #     pg.draw.circle(self.map, COLORS['blue'], self.paths[player][-1], 5)
+                #     pg.draw.circle(self.map, COLORS['white'], self.paths[player][-2], 5)
 
     def show(self, probs: np.ndarray = None, changes: np.ndarray = None, loc: tuple = None, player: int = 0):
         """Shows the map image with the point cloud."""
@@ -219,6 +218,18 @@ class Environment:
                 self.ghosts_learned_walls[x, y] = val
             else:
                 self.pacman_learned_walls[x, y] = val
+        
+        colors = [COLORS['yellow'], COLORS['green'], COLORS['blue']]
+        
+        # Draw player path
+        if len(self.paths[player]) > 1:
+            for i in range(len(self.paths[player])-1):
+                pg.draw.line(self.map, colors[player], self.paths[player][i], self.paths[player][i+1], 3)
+                # pg.draw.circle(self.map, COLORS['blue'], self.paths[player][i+1], 5)
+                # pg.draw.circle(self.map, COLORS['white'], self.paths[player][i], 5)
+
+        # Draw goal
+        pg.draw.circle(self.map, COLORS['green'], self.goal, 20)
 
         # Update the display
         pg.display.flip()

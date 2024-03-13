@@ -4,7 +4,7 @@ from node import Node
 from scipy.spatial      import KDTree
 from math               import pi, sin, cos, atan2, sqrt, ceil
 import random
-from constants import C_GOAL, C_GHOST, C_LOR, WIDTH, HEIGHT, COLORS
+from constants import *
 from utils import euclidean, get_round_grid, pixel_to_grid, grid_to_pixel
 from constants import SCAN_RESOLUTION
 
@@ -35,7 +35,12 @@ class Entity:
 
         self.learn = True
         self.pacman = pacman
-
+        
+        if pacman:
+            self.ghost_pos = [None for _ in range(NUM_GHOSTS)]
+        else:
+            self.ghost_pos = None
+        
         self.traversed = np.zeros((np.size(env.walls, axis=0), np.size(env.walls, axis=1)))
     
     def update_pos(self, path):
@@ -125,15 +130,26 @@ class Entity:
             numnear = kdtree.query_ball_point(X, r=1.5*self.speed, return_length=True)
 
             # Directly determine the distances to the goal node.
-            distances = np.array([node.distance(goalnode) for node in tree])
+            goal_distances = np.array([node.distance(goalnode) for node in tree])
+            ghost_distances = np.zeros(len(X))
+            if self.pacman and NUM_GHOSTS > 0 and self.ghost_pos[0] is not None:
+                ghost_nodes = [Node(pos[0], pos[1], self.env, self.learn, False) for pos in self.ghost_pos]
+                ghost_distances = []
+                for node in tree:
+                    avg = 0
+                    for ghost_node in ghost_nodes:
+                        avg += node.distance(ghost_node)
+                    avg /= NUM_GHOSTS
+                    ghost_distances.append(avg)
+                ghost_distances = np.array(ghost_distances)
 
             # min_neighbors = min(numnear)
             # choices = [i for i in range(len(numnear)) if numnear[i] == min_neighbors]
             # grownode = tree[random.choice(choices)]
 
-            scale = 1
-            scale_near = 50
-            new_metric = np.array([scale_near * numnear[i] + scale * distances[i] for i in range(len(X))])
+            # scale = 1
+            # scale_near = 50
+            new_metric = np.array([C_NEAR * numnear[i] + C_GOAL * goal_distances[i] + C_GHOST * ghost_distances[i] for i in range(len(X))])
             index     = np.argmin(new_metric)
             grownode  = tree[index]
 
@@ -144,14 +160,15 @@ class Entity:
                 heading = atan2(grownode.y - grownode.parent.y,
                                 grownode.x - grownode.parent.x)
             
-            # print(grownode)
+            # if self.pacman == False:
+            #     print(grownode)
             # print(get_round_grid(grownode.coordinates()))
 
             # Find something nearby: keep looping until the tree grows.
             while True:
                 angle = np.random.normal(heading, np.pi/2)
                 nextnode = Node(grownode.x + self.speed*np.cos(angle), grownode.y + self.speed*np.sin(angle), self.env, learn=self.learn, pacman=self.pacman)
-
+                
                 # Try to connect.
                 if nextnode.inFreespace() and (nextnode.connectsTo(grownode)):
                     addtotree(grownode, nextnode)
