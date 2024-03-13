@@ -126,8 +126,8 @@ def main():
         count += 1
         pg.display.update()
 
-        # if count % 3 == 0:
-        #     env_.show_learned_maps()
+        if count % 3 == 0:
+            env_.show_learned_maps()
 
     pg.quit()
     

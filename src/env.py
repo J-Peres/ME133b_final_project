@@ -62,7 +62,7 @@ class Environment:
         self.pacman_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
         self.ghosts_learned_walls = np.zeros((np.size(self.walls, axis=0), np.size(self.walls, axis=1))) - 1
 
-        # self.show_learned_maps()
+        self.show_learned_maps()
 
     def generate_maze(self, loops):
         """Generates a maze and sets the walls, start, and goal."""
@@ -164,12 +164,16 @@ class Environment:
         
         # Create an image of the maze
         colormap = colors.ListedColormap(["white", "black"])
-        plt.figure(figsize=(8, 8))
+        plt.figure(0, figsize=(8, 8))
         plt.imshow(self.walls, cmap=colormap)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         plt.axis('off')
         plt.savefig(self.map_file)
-        plt.show() if display else None
+
+        if not display:
+            plt.close()
+        else:
+            plt.show()
 
     def show_learned_maps(self, display=True):
         """Shows the learned maps one above the other."""
