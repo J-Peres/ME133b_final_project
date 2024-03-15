@@ -12,7 +12,7 @@ path = 'est'
 # path = None
 
 def main():
-    env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE, loops=7)
+    env_  = env.Environment((WIDTH, HEIGHT), seed=SEED, map_size=MAZE_SIZE, loops=5)
     laser_ = sensor.LaserSensor(env_.map_img_arr, (0, 0), (WIDTH, HEIGHT), RMIN, RMAX, scan_resolution=SCAN_RESOLUTION, heading_resolution=HEADING_RESOLUTION)
     
     ghost_lasers = []

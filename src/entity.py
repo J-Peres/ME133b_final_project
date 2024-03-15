@@ -42,6 +42,8 @@ class Entity:
             self.ghost_pos = None
         
         self.traversed = np.zeros((np.size(env.walls, axis=0), np.size(env.walls, axis=1)))
+
+        self.count = 0
     
     def update_pos(self, path):
         if path is None and self.target_pos is not None:
@@ -66,6 +68,8 @@ class Entity:
 
             # if we can no longer go this way, restart
             if not start.connectsTo(end):
+                print(f'rerunning {self.count}')
+                self.count += 1
                 self.est()
                 self.index = 0
                 return
@@ -91,9 +95,12 @@ class Entity:
 
         # Function to attach a new node to an existing node: attach the
         # parent, add to the tree, and show in the figure.
-        def addtotree(oldnode, newnode):
+        def addtotree(oldnode, newnode, val = False):
             newnode.parent = oldnode
             tree.append(newnode)
+            # if val:
+            #     grid = oldnode.coordinates()
+            #     self.env.draw_circle((round(grid[0]), round(grid[1])), (0, 0, 255))
 
         this_round_traversed = np.zeros(self.traversed.shape)
 
@@ -112,7 +119,7 @@ class Entity:
                 if self.traversed[trial_loc[0], trial_loc[1]] == 1: # we have been that way at some point
                     pixel = grid_to_pixel(trial_loc)
                     nextnode = Node(pixel[0], pixel[1], self.env, learn=self.learn, pacman=self.pacman, fuck_factor=10000)
-                    addtotree(new_spot, nextnode)
+                    addtotree(new_spot, nextnode, val=True)
 
                     search_traversed(new_spot, nextnode, (dx, dy), dist + 1)
                     last = False
@@ -147,9 +154,11 @@ class Entity:
             # choices = [i for i in range(len(numnear)) if numnear[i] == min_neighbors]
             # grownode = tree[random.choice(choices)]
 
+            depths = np.array([node.depth for node in tree])
+
             # scale = 1
             # scale_near = 50
-            new_metric = np.array([C_NEAR * numnear[i] + C_GOAL * goal_distances[i] + C_GHOST * ghost_distances[i] for i in range(len(X))])
+            new_metric = np.array([C_NEAR * numnear[i] + C_GOAL * goal_distances[i] + C_GHOST * ghost_distances[i] + 20 * depths[i] for i in range(len(X))])
             index     = np.argmin(new_metric)
             grownode  = tree[index]
 
@@ -179,6 +188,8 @@ class Entity:
                         search_traversed(grownode, nextnode, tuple(np.array(grid_spot) - np.array(old_spot)), 0)
 
                     break
+
+            nextnode.depth = grownode.depth + 1
 
             # Once grown, also check whether to connect to goal.
             if nextnode.connectsTo(goalnode): # and nextnode.distance(goalnode) <= self.speed: # nextnode.distance(goalnode) <= self.speed and 

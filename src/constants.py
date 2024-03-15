@@ -18,7 +18,7 @@ LMAX = None
 
 C_GOAL  =  1
 C_GHOST = -2
-C_NEAR  =  50
+C_NEAR  =  40
 # C_LOR   =  10
 
 SEED = 42

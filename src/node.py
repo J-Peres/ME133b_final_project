@@ -30,6 +30,7 @@ class Node:
             self.walls = env.walls
         
         self.fuck_factor = 0
+        self.depth = 0
 
     ############
     # Utilities:

@@ -235,6 +235,9 @@ class Environment:
                 #     pg.draw.circle(self.map, COLORS['blue'], self.paths[player][-1], 5)
                 #     pg.draw.circle(self.map, COLORS['white'], self.paths[player][-2], 5)
 
+    def draw_circle(self, loc, color):
+        pg.draw.circle(self.map, color, loc, 5)
+
     def show(self, probs: np.ndarray = None, changes: np.ndarray = None, loc: tuple = None, player: int = 0):
         """Shows the map image with the point cloud."""
 
