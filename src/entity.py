@@ -68,7 +68,6 @@ class Entity:
 
             # if we can no longer go this way, restart
             if not start.connectsTo(end):
-                print(f'rerunning {self.count}')
                 self.count += 1
                 self.est()
                 self.index = 0
@@ -118,14 +117,14 @@ class Entity:
 
                 if self.traversed[trial_loc[0], trial_loc[1]] == 1: # we have been that way at some point
                     pixel = grid_to_pixel(trial_loc)
-                    nextnode = Node(pixel[0], pixel[1], self.env, learn=self.learn, pacman=self.pacman, fuck_factor=10000)
+                    nextnode = Node(pixel[0], pixel[1], self.env, learn=self.learn, pacman=self.pacman, distance_add=10000)
                     addtotree(new_spot, nextnode, val=True)
 
                     search_traversed(new_spot, nextnode, (dx, dy), dist + 1)
                     last = False
 
             if last: # allow us to actually expand from this node
-                new_spot.fuck_factor = dist * 38
+                new_spot.distance_add = dist * 38
 
         # Loop - keep growing the tree.
         while True:

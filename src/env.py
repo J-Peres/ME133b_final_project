@@ -5,6 +5,8 @@ from mazelib import Maze
 import time
 from mazelib.generate.Prims import Prims
 from mazelib.solve.BacktrackingSolver import BacktrackingSolver as BackTracker
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from mazelib.solve.BacktrackingSolver import BacktrackingSolver
@@ -263,7 +265,7 @@ class Environment:
             if loc is not None:
                 p1, p2 = self.get_border_grid(point)
 
-                # ingore edges cus they fuck shit up
+                # ingore edges cus they cause issues and arent necessary
                 if p1 is None:
                     continue
 
